@@ -6,7 +6,7 @@
   "ignition": { "busUrl": "ws://localhost:3001", "payloadField": "ignition", "staleMs": 6000 },
   "charge": { "onlinePath": "/sys/class/power_supply/AC/online", "batteryStatusPath": "/sys/class/power_supply/BAT0/status" },
   "battery": { "capacityPath": "/sys/class/power_supply/BAT0/capacity", "hibernateBelowPct": 15, "criticalBelowPct": 7 },
-  "timers": { "sleepAfterMs": 60000 },
+  "timers": { "sleepAfterMs": 600000 },
   "actions": {
     "sleepCmd": "sudo systemctl hibernate",
     "hibernateCmd": "sudo systemctl hibernate",

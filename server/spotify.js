@@ -239,6 +239,23 @@ router.post('/play', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+/* ── Lancer les titres likés en aléatoire (utilisé au démarrage/réveil) ── */
+router.post('/play-liked', async (_req, res, next) => {
+  try {
+    const device_id = await resolveDeviceId();                 // cible « MJ Data SJ413 » et l'active
+    const d = await api('/me/tracks', { query: { limit: 50 } });
+    let uris = (d.items || []).map(it => it.track && it.track.uri).filter(Boolean);
+    if (!uris.length) throw httpErr(404, 'Aucun titre liké');
+    for (let i = uris.length - 1; i > 0; i--) {                // mélange Fisher-Yates
+      const j = Math.floor(Math.random() * (i + 1));
+      [uris[i], uris[j]] = [uris[j], uris[i]];
+    }
+    await api('/me/player/shuffle', { method: 'PUT', query: { state: true, device_id } }).catch(() => {});
+    await api('/me/player/play', { method: 'PUT', query: { device_id }, body: { uris } });
+    res.json({ ok: true, count: uris.length });
+  } catch (e) { next(e); }
+});
+
 /* Résout l'appareil cible : priorité au device nommé (librespot « MJ Data SJ413 »),
    sinon l'appareil déjà actif, sinon le premier disponible. Passé en device_id à
    /play → Spotify l'active automatiquement (plus besoin d'un appareil déjà actif). */
