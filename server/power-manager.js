@@ -40,7 +40,13 @@ const DEFAULTS = {
   charge: { onlinePath: '/sys/class/power_supply/AC/online', batteryStatusPath: '/sys/class/power_supply/BAT0/status' },
   battery: { capacityPath: '/sys/class/power_supply/BAT0/capacity', hibernateBelowPct: 15, criticalBelowPct: 7 },
   timers: { sleepAfterMs: 900000 },
-  actions: { sleepCmd: 'sudo systemctl suspend-then-hibernate', hibernateCmd: 'sudo systemctl hibernate', dryRun: false },
+  actions: {
+    sleepCmd: 'sudo systemctl suspend-then-hibernate',
+    hibernateCmd: 'sudo systemctl hibernate',
+    screenOffCmd: 'DISPLAY=:0 XAUTHORITY=$(ls -t /tmp/serverauth.* 2>/dev/null | head -1) xset dpms force off',
+    screenOnCmd: 'DISPLAY=:0 XAUTHORITY=$(ls -t /tmp/serverauth.* 2>/dev/null | head -1) xset dpms force on',
+    dryRun: false
+  },
   simulation: { enabled: false, charge: true, ignition: null, batteryPct: 80 },
   resumeDetectGapMs: 8000,
   log: { transitions: true, samples: false }
@@ -149,13 +155,14 @@ module.exports = function createPowerManager() {
     if (!present) {
       if (state === S.RUNNING || state === S.PENDING) enterIdleWait();
     } else {
-      if ([S.PENDING, S.IDLE_WAIT, S.SLEEP, S.HIBERNATE].includes(state)) { clearIdle(); setState(S.RUNNING); }
+      if ([S.PENDING, S.IDLE_WAIT, S.SLEEP, S.HIBERNATE].includes(state)) { clearIdle(); setState(S.RUNNING); screenOn(); }
     }
   }
   function enterIdleWait() {
     clearIdle();
     setState(S.IDLE_WAIT);
     logT(`contact coupé confirmé → IDLE_WAIT (veille dans ${Math.round(cfg.timers.sleepAfterMs / 1000)}s sauf retour)`);
+    screenOff();   // contact coupé confirmé → écran éteint (machine toujours active jusqu'à la veille)
     idleTimer = setTimeout(() => { logT('timer de veille expiré'); doSleep(); }, cfg.timers.sleepAfterMs);
   }
 
@@ -166,6 +173,16 @@ module.exports = function createPowerManager() {
       exec(cmd, (err, _o, se) => { if (err) logT(`ÉCHEC « ${cmd} » : ${(se || err.message || '').trim()}`); resolve(!err); });
     });
   }
+  // Écran : extinction/allumage indépendants de la veille (toujours exécutés, non soumis à dryRun :
+  // c'est une action sûre et réversible, et c'est le comportement « contact coupé → écran éteint »).
+  function execScreen(cmd) {
+    if (!cmd) return;
+    exec(cmd, (err, _o, se) => { if (err) logT(`écran : échec « ${cmd} » : ${(se || err.message || '').trim()}`); });
+  }
+  let screenIsOff = false;
+  function screenOff() { if (screenIsOff) return; screenIsOff = true; logT('écran → OFF (contact coupé)'); execScreen(cfg.actions.screenOffCmd); }
+  function screenOn() { if (!screenIsOff) return; screenIsOff = false; logT('écran → ON'); execScreen(cfg.actions.screenOnCmd); }
+
   async function doSleep() { clearIdle(); setState(S.SLEEP); logT(`→ mise en veille : ${cfg.actions.sleepCmd}`); await run(cfg.actions.sleepCmd); }
   async function doHibernate() { clearIdle(); setState(S.HIBERNATE); logT(`→ hibernation : ${cfg.actions.hibernateCmd}`); await run(cfg.actions.hibernateCmd); }
 
@@ -175,7 +192,7 @@ module.exports = function createPowerManager() {
     // Détection de réveil : un grand trou = process gelé pendant S3/S4 → on repart en RUNNING
     if ((now - lastSampleAt) > cfg.resumeDetectGapMs && (state === S.SLEEP || state === S.HIBERNATE)) {
       logT(`réveil détecté (trou ${now - lastSampleAt}ms)`);
-      stableContact = null; pendingTarget = null; setState(S.RUNNING);
+      stableContact = null; pendingTarget = null; setState(S.RUNNING); screenOn();
     }
     lastSampleAt = now;
 

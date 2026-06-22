@@ -7,7 +7,13 @@
   "charge": { "onlinePath": "/sys/class/power_supply/AC/online", "batteryStatusPath": "/sys/class/power_supply/BAT0/status" },
   "battery": { "capacityPath": "/sys/class/power_supply/BAT0/capacity", "hibernateBelowPct": 15, "criticalBelowPct": 7 },
   "timers": { "sleepAfterMs": 900000 },
-  "actions": { "sleepCmd": "sudo systemctl suspend-then-hibernate", "hibernateCmd": "sudo systemctl hibernate", "dryRun": false },
+  "actions": {
+    "sleepCmd": "sudo systemctl suspend-then-hibernate",
+    "hibernateCmd": "sudo systemctl hibernate",
+    "screenOffCmd": "DISPLAY=:0 XAUTHORITY=$(ls -t /tmp/serverauth.* 2>/dev/null | head -1) xset dpms force off",
+    "screenOnCmd": "DISPLAY=:0 XAUTHORITY=$(ls -t /tmp/serverauth.* 2>/dev/null | head -1) xset dpms force on",
+    "dryRun": false
+  },
   "simulation": { "enabled": false, "charge": true, "ignition": null, "batteryPct": 80 },
   "resumeDetectGapMs": 8000,
   "log": { "transitions": true, "samples": false }
