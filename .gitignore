@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.local
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+# tokens Spotify persistés (ne jamais committer)
+config/spotify-tokens.json
+# certificat auto-signé local (clé privée — ne jamais committer)
+config/certs/
+# cache cartes offline
+public/tiles-cache/

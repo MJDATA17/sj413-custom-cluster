@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>MJ Data Nav + Music</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Montserrat:wght@400;600;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;}
+body{font-family:'Geist Mono',monospace;display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap;padding:20px;}
+
+.nav-circle{position:relative;width:680px;height:680px;border-radius:50%;overflow:hidden;background:#0A0E14;box-shadow:0 0 0 1px rgba(255,255,255,0.06),inset 0 0 80px rgba(0,0,0,0.6);}
+.nav-ring{position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(2,191,166,0.15);pointer-events:none;z-index:30;}
+.nav-ring::after{content:'';position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(255,255,255,0.04);}
+#map-canvas{position:absolute;inset:0;width:680px;height:680px;z-index:1;}
+.veil-top{position:absolute;top:0;left:0;right:0;height:150px;z-index:5;background:linear-gradient(180deg,rgba(10,14,20,0.85) 0%,rgba(10,14,20,0.4) 50%,transparent 100%);pointer-events:none;}
+.veil-bottom{position:absolute;bottom:0;left:0;right:0;height:280px;z-index:5;background:linear-gradient(0deg,rgba(10,14,20,0.97) 0%,rgba(10,14,20,0.8) 45%,transparent 100%);pointer-events:none;}
+
+/* ─── INSTRUCTION (tuile translucide) ─── */
+.instruction{position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:10;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:18px 34px 16px;background:rgba(16,22,30,0.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.08);border-radius:22px;box-shadow:0 8px 32px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.06);}
+.instr-arrow{width:62px;height:62px;display:flex;align-items:center;justify-content:center;margin-bottom:2px;}
+.instr-arrow svg{width:100%;height:100%;filter:drop-shadow(0 0 12px rgba(2,191,166,0.5));}
+.instr-distance{font-family:'Montserrat',sans-serif;font-weight:900;font-size:46px;color:#fff;letter-spacing:-0.03em;line-height:1;}
+.instr-distance small{font-size:20px;font-weight:600;color:rgba(255,255,255,0.5);margin-left:2px;}
+.instr-street{font-family:'Geist Mono',monospace;font-weight:400;font-size:13px;color:#02BFA6;letter-spacing:0.18em;text-transform:uppercase;margin-top:2px;}
+
+.lanes{position:absolute;bottom:200px;left:0;right:0;z-index:10;display:flex;justify-content:center;gap:9px;}
+.lane{width:46px;height:60px;border-radius:7px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;transition:all .4s ease;}
+.lane svg{width:26px;height:38px;opacity:0.28;transition:all .4s ease;}
+.lane.active{background:rgba(2,191,166,0.14);border-color:rgba(2,191,166,0.6);box-shadow:0 0 20px rgba(2,191,166,0.25),inset 0 0 14px rgba(2,191,166,0.1);}
+.lane.active svg{opacity:1;filter:drop-shadow(0 0 6px rgba(2,191,166,0.6));}
+
+/* ─── MINI-BANDEAU MUSIQUE (visible en mode nav) ─── */
+.music-mini{
+  position:absolute;bottom:128px;left:50%;transform:translateX(-50%);z-index:11;
+  display:flex;align-items:center;gap:12px;
+  padding:8px 16px 8px 8px;
+  background:rgba(16,22,30,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,0.08);border-radius:40px;
+  box-shadow:0 6px 24px rgba(0,0,0,0.4);
+  cursor:pointer;max-width:300px;transition:all .3s;
+}
+.music-mini:hover{border-color:rgba(2,191,166,0.4);}
+.music-mini.hidden{display:none;}
+.mini-cover{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#8B5CF6,#02BFA6);overflow:hidden;animation:spin 8s linear infinite;}
+.mini-cover img{width:100%;height:100%;object-fit:cover;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.mini-info{display:flex;flex-direction:column;min-width:0;}
+.mini-title{font-family:'Montserrat',sans-serif;font-weight:600;font-size:12px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
+.mini-artist{font-size:9px;color:rgba(255,255,255,0.5);letter-spacing:0.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
+.mini-eq{display:flex;align-items:flex-end;gap:2px;height:16px;flex-shrink:0;margin-left:4px;}
+.mini-eq span{width:3px;background:#02BFA6;border-radius:1px;animation:eq 0.8s ease-in-out infinite;}
+.mini-eq span:nth-child(1){animation-delay:0s;}
+.mini-eq span:nth-child(2){animation-delay:0.2s;}
+.mini-eq span:nth-child(3){animation-delay:0.4s;}
+.mini-eq span:nth-child(4){animation-delay:0.1s;}
+@keyframes eq{0%,100%{height:4px;}50%{height:16px;}}
+
+.bottom-data{position:absolute;bottom:52px;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:center;gap:38px;}
+.speed-limit{width:62px;height:62px;border-radius:50%;background:#fff;border:5px solid #E5322B;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-weight:900;font-size:24px;color:#111;box-shadow:0 2px 12px rgba(0,0,0,0.4);}
+.speed-limit.over{animation:limitAlert .6s ease-in-out infinite;}
+@keyframes limitAlert{0%,100%{box-shadow:0 0 0 rgba(229,50,43,0);}50%{box-shadow:0 0 24px rgba(229,50,43,0.8);}}
+.current-speed{display:flex;flex-direction:column;align-items:center;}
+.cs-num{font-family:'Montserrat',sans-serif;font-weight:900;font-size:54px;color:#fff;letter-spacing:-0.04em;line-height:0.9;}
+.cs-unit{font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.25em;margin-top:2px;}
+.current-speed.over .cs-num{color:#FF4444;text-shadow:0 0 20px rgba(255,68,68,0.5);}
+
+/* ═══ OVERLAY MUSIQUE PLEIN ═══ */
+.music-full{
+  position:absolute;inset:0;z-index:25;
+  background:rgba(10,14,20,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:0;
+  padding:60px;
+}
+.music-full.active{display:flex;animation:fadeIn .35s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+/* fond ambiant flou tiré de la pochette */
+.music-ambient{position:absolute;inset:0;z-index:-1;opacity:0.35;filter:blur(60px) saturate(1.4);transform:scale(1.3);}
+
+.mf-cover{
+  width:240px;height:240px;border-radius:20px;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.08);
+  background:linear-gradient(135deg,#8B5CF6,#02BFA6);
+  margin-bottom:28px;
+}
+.mf-cover img{width:100%;height:100%;object-fit:cover;}
+.mf-title{font-family:'Montserrat',sans-serif;font-weight:900;font-size:30px;color:#fff;text-align:center;letter-spacing:-0.02em;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mf-artist{font-family:'Geist Mono',monospace;font-size:14px;color:#02BFA6;letter-spacing:0.15em;text-transform:uppercase;margin-top:6px;}
+
+/* barre de progression */
+.mf-progress{width:80%;max-width:420px;margin-top:28px;}
+.mf-bar{height:4px;background:rgba(255,255,255,0.12);border-radius:2px;overflow:hidden;position:relative;}
+.mf-bar-fill{height:100%;width:42%;background:#02BFA6;border-radius:2px;box-shadow:0 0 10px rgba(2,191,166,0.5);transition:width .3s;}
+.mf-times{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.4);font-family:'Geist Mono',monospace;}
+
+/* contrôles */
+.mf-controls{display:flex;align-items:center;gap:34px;margin-top:34px;}
+.mf-btn{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;transition:all .2s;}
+.mf-btn svg{width:30px;height:30px;fill:rgba(255,255,255,0.85);}
+.mf-btn:hover svg{fill:#fff;}
+.mf-btn.play{width:74px;height:74px;background:#02BFA6;box-shadow:0 8px 24px rgba(2,191,166,0.4);}
+.mf-btn.play svg{fill:#04121a;width:34px;height:34px;}
+.mf-btn.play:hover{transform:scale(1.05);}
+
+/* bouton retour nav */
+.mf-close{position:absolute;top:30px;right:30px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;}
+.mf-close svg{width:20px;height:20px;stroke:rgba(255,255,255,0.7);}
+.mf-source{position:absolute;top:36px;left:34px;display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:0.15em;text-transform:uppercase;font-family:'Geist Mono',monospace;}
+.mf-source svg{width:18px;height:18px;}
+
+/* mini-nav pendant musique : bandeau direction en haut */
+.music-nav-strip{
+  position:absolute;top:30px;left:50%;transform:translateX(-50%);z-index:2;
+  display:flex;align-items:center;gap:12px;padding:10px 20px;
+  background:rgba(2,191,166,0.12);border:1px solid rgba(2,191,166,0.3);border-radius:30px;
+}
+.music-nav-strip svg{width:22px;height:22px;}
+.music-nav-strip .mns-dist{font-family:'Montserrat',sans-serif;font-weight:800;font-size:15px;color:#fff;}
+.music-nav-strip .mns-street{font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.1em;}
+
+.panel{display:flex;flex-direction:column;gap:14px;background:rgba(10,14,20,0.9);border:1px solid #1a2028;border-radius:12px;padding:20px;width:300px;}
+.panel h2{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;color:#02BFA6;letter-spacing:0.15em;text-transform:uppercase;}
+.panel button{background:#141a22;border:1px solid #222e38;color:#02BFA6;font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.1em;padding:11px;cursor:pointer;border-radius:6px;transition:all .2s;}
+.panel button:hover{border-color:#02BFA6;}
+.panel button.active{background:#02BFA6;color:#04121a;}
+.panel .row{display:flex;align-items:center;gap:10px;}
+.panel label{font-size:10px;color:#556;letter-spacing:0.1em;text-transform:uppercase;width:80px;flex-shrink:0;}
+.panel input[type=range]{flex:1;height:3px;-webkit-appearance:none;background:#1a2028;border-radius:2px;outline:none;}
+.panel input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#02BFA6;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="nav-circle">
+  <canvas id="map-canvas" width="680" height="680"></canvas>
+  <div class="veil-top"></div>
+  <div class="veil-bottom"></div>
+
+  <!-- INSTRUCTION NAV -->
+  <div class="instruction" id="instruction">
+    <div class="instr-arrow" id="instr-arrow"></div>
+    <div class="instr-distance" id="instr-dist">800<small>m</small></div>
+    <div class="instr-street" id="instr-street">Av. de l'Arsenal</div>
+  </div>
+
+  <!-- LANES -->
+  <div class="lanes" id="lanes"></div>
+
+  <!-- MINI BANDEAU MUSIQUE -->
+  <div class="music-mini" id="music-mini" onclick="openMusic()">
+    <div class="mini-cover"><img id="mini-cover-img" src="" alt=""></div>
+    <div class="mini-info">
+      <div class="mini-title" id="mini-title">Midnight City</div>
+      <div class="mini-artist" id="mini-artist">M83</div>
+    </div>
+    <div class="mini-eq"><span></span><span></span><span></span><span></span></div>
+  </div>
+
+  <!-- DATA BAS -->
+  <div class="bottom-data">
+    <div class="speed-limit" id="speed-limit">90</div>
+    <div class="current-speed" id="current-speed">
+      <div class="cs-num" id="cs-num">76</div>
+      <div class="cs-unit">KM/H</div>
+    </div>
+  </div>
+
+  <!-- ═══ OVERLAY MUSIQUE ═══ -->
+  <div class="music-full" id="music-full">
+    <div class="music-ambient" id="music-ambient"></div>
+
+    <!-- mini nav pendant musique -->
+    <div class="music-nav-strip" id="music-nav-strip">
+      <svg viewBox="0 0 48 48" fill="none"><path d="M14 40 L14 24 Q14 18 20 18 L30 18" stroke="#02BFA6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 11 L33 18 L25 25" stroke="#02BFA6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      <div>
+        <div class="mns-dist" id="mns-dist">800 m</div>
+        <div class="mns-street" id="mns-street">Av. de l'Arsenal</div>
+      </div>
+    </div>
+
+    <div class="mf-source">
+      <svg viewBox="0 0 24 24" fill="#1DB954"><circle cx="12" cy="12" r="12"/><path d="M17 16.5c-2.3-1.4-5.2-1.7-8.6-0.9-0.4 0.1-0.7-0.2-0.8-0.5s0.2-0.7 0.5-0.8c3.7-0.8 6.9-0.5 9.5 1.1 0.3 0.2 0.4 0.6 0.2 0.9s-0.6 0.4-0.8 0.2zm0.1-2.7c-2.6-1.6-6.6-2.1-9.7-1.1-0.4 0.1-0.8-0.1-1-0.5s0.1-0.8 0.5-1c3.5-1.1 7.9-0.6 10.9 1.3 0.3 0.2 0.5 0.7 0.2 1.1s-0.6 0.4-0.9 0.2zm0.1-2.8c-3.1-1.8-8.2-2-11.1-1.1-0.5 0.1-1-0.1-1.1-0.6s0.1-1 0.6-1.1c3.4-1 9-0.8 12.5 1.3 0.4 0.3 0.6 0.8 0.3 1.3s-0.8 0.5-1.2 0.2z" fill="#000"/></svg>
+      Spotify
+    </div>
+
+    <div class="mf-close" onclick="closeMusic()">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 L6 18 M6 6 L18 18" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+
+    <div class="mf-cover"><img id="mf-cover-img" src="" alt=""></div>
+    <div class="mf-title" id="mf-title">Midnight City</div>
+    <div class="mf-artist" id="mf-artist">M83</div>
+
+    <div class="mf-progress">
+      <div class="mf-bar"><div class="mf-bar-fill" id="mf-bar-fill"></div></div>
+      <div class="mf-times"><span id="mf-cur">1:42</span><span id="mf-tot">4:03</span></div>
+    </div>
+
+    <div class="mf-controls">
+      <button class="mf-btn" onclick="prevTrack()"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+      <button class="mf-btn play" id="play-btn" onclick="togglePlay()"><svg viewBox="0 0 24 24" id="play-icon"><path d="M8 5v14l11-7z"/></svg></button>
+      <button class="mf-btn" onclick="nextTrack()"><svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zm-1.5 6L6 6v12z"/></svg></button>
+    </div>
+  </div>
+
+  <div class="nav-ring"></div>
+</div>
+
+<!-- CONTRÔLES SIMU -->
+<div class="panel">
+  <h2>Affichage</h2>
+  <button onclick="closeMusic()" id="btn-nav" class="active">🧭 Mode Navigation</button>
+  <button onclick="openMusic()" id="btn-music">♪ Mode Musique</button>
+  <h2 style="margin-top:8px;">Lecture</h2>
+  <button onclick="togglePlay()">⏯ Play / Pause</button>
+  <button onclick="nextTrack()">⏭ Morceau suivant</button>
+  <h2 style="margin-top:8px;">Trajet</h2>
+  <button onclick="toggleDrive()" id="btn-drive">▶ Simuler trajet</button>
+</div>
+
+<script>
+const TEAL='#02BFA6',cv=document.getElementById('map-canvas'),ctx=cv.getContext('2d');
+const W=680,H=680,CX=W/2,CY=H/2;
+
+/* fausses pochettes (dégradés) pour la démo */
+const TRACKS=[
+  {title:'Midnight City',artist:'M83',dur:243,grad:['#8B5CF6','#02BFA6']},
+  {title:'Nightcall',artist:'Kavinsky',dur:258,grad:['#FF4444','#8B5CF6']},
+  {title:'Instant Crush',artist:'Daft Punk',dur:337,grad:['#02BFA6','#4D9FFF']},
+  {title:'A Real Hero',artist:'College',dur:264,grad:['#BF5FFF','#02BFA6']},
+];
+let trackIdx=0,playing=true,trackPos=102;
+
+let state={speed:76,limit:90,dist:800,maneuver:'right',lanes:3,activeLanes:[2],roadOffset:0};
+
+function fmtTime(s){const m=Math.floor(s/60),ss=Math.floor(s%60);return m+':'+String(ss).padStart(2,'0');}
+function gradCanvas(grad,size){
+  const c=document.createElement('canvas');c.width=c.height=size;
+  const g=c.getContext('2d');const lg=g.createLinearGradient(0,0,size,size);
+  lg.addColorStop(0,grad[0]);lg.addColorStop(1,grad[1]);
+  g.fillStyle=lg;g.fillRect(0,0,size,size);
+  // motif disque
+  g.globalAlpha=0.15;g.fillStyle='#fff';
+  for(let r=size*0.1;r<size*0.5;r+=size*0.08){g.beginPath();g.arc(size/2,size/2,r,0,Math.PI*2);g.stroke();}
+  return c.toDataURL();
+}
+
+function loadTrack(){
+  const t=TRACKS[trackIdx];
+  const cover=gradCanvas(t.grad,300);
+  document.getElementById('mini-cover-img').src=cover;
+  document.getElementById('mf-cover-img').src=cover;
+  document.getElementById('music-ambient').style.background=`linear-gradient(135deg,${t.grad[0]},${t.grad[1]})`;
+  document.getElementById('mini-title').textContent=t.title;
+  document.getElementById('mini-artist').textContent=t.artist;
+  document.getElementById('mf-title').textContent=t.title;
+  document.getElementById('mf-artist').textContent=t.artist;
+  document.getElementById('mf-tot').textContent=fmtTime(t.dur);
+  updateProgress();
+}
+function updateProgress(){
+  const t=TRACKS[trackIdx];
+  const pct=trackPos/t.dur*100;
+  document.getElementById('mf-bar-fill').style.width=pct+'%';
+  document.getElementById('mf-cur').textContent=fmtTime(trackPos);
+}
+function togglePlay(){
+  playing=!playing;
+  document.getElementById('play-icon').innerHTML=playing?'<path d="M6 5h4v14H6zm8 0h4v14h-4z"/>':'<path d="M8 5v14l11-7z"/>';
+  document.querySelectorAll('.mini-eq span').forEach(s=>s.style.animationPlayState=playing?'running':'paused');
+  document.querySelector('.mini-cover').style.animationPlayState=playing?'running':'paused';
+}
+function nextTrack(){trackIdx=(trackIdx+1)%TRACKS.length;trackPos=0;loadTrack();}
+function prevTrack(){if(trackPos>3){trackPos=0;updateProgress();}else{trackIdx=(trackIdx-1+TRACKS.length)%TRACKS.length;trackPos=0;loadTrack();}}
+
+function openMusic(){
+  document.getElementById('music-full').classList.add('active');
+  document.getElementById('btn-music').classList.add('active');
+  document.getElementById('btn-nav').classList.remove('active');
+}
+function closeMusic(){
+  document.getElementById('music-full').classList.remove('active');
+  document.getElementById('btn-music').classList.remove('active');
+  document.getElementById('btn-nav').classList.add('active');
+}
+
+/* ─── CARTE ─── */
+function drawMap(){
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#0A0E14';ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=1;
+  const off=state.roadOffset%80;
+  for(let i=-2;i<12;i++){const y=i*80+off;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  for(let i=0;i<10;i++){const x=i*80;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  ctx.restore();
+  ctx.save();const roadW=58;const turnY=H*0.40;
+  ctx.beginPath();ctx.moveTo(CX,H+20);ctx.lineTo(CX,turnY+60);
+  if(state.maneuver==='right'){ctx.quadraticCurveTo(CX,turnY,CX+90,turnY-10);ctx.lineTo(W+20,turnY-40);}
+  else if(state.maneuver==='left'){ctx.quadraticCurveTo(CX,turnY,CX-90,turnY-10);ctx.lineTo(-20,turnY-40);}
+  else{ctx.lineTo(CX,turnY-120);}
+  ctx.shadowColor='rgba(2,191,166,0.5)';ctx.shadowBlur=24;ctx.strokeStyle='rgba(2,191,166,0.25)';ctx.lineWidth=roadW+10;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(2,191,166,0.85)';ctx.lineWidth=roadW;ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=3;ctx.setLineDash([14,18]);ctx.lineDashOffset=-state.roadOffset*2;ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  const px=CX,py=H*0.62;ctx.save();ctx.translate(px,py);
+  ctx.beginPath();ctx.arc(0,0,30,0,Math.PI*2);ctx.fillStyle='rgba(2,191,166,0.12)';ctx.fill();
+  ctx.beginPath();ctx.moveTo(0,-20);ctx.lineTo(15,14);ctx.lineTo(0,5);ctx.lineTo(-15,14);ctx.closePath();
+  ctx.fillStyle='#fff';ctx.shadowColor='rgba(2,191,166,0.8)';ctx.shadowBlur=14;ctx.fill();ctx.restore();
+}
+function renderLanes(){
+  const c=document.getElementById('lanes');c.innerHTML='';
+  for(let i=0;i<state.lanes;i++){
+    const lane=document.createElement('div');const isActive=state.activeLanes.includes(i);
+    lane.className='lane'+(isActive?' active':'');
+    let path;
+    if(isActive&&state.maneuver==='right')path='<path d="M13 34 L13 20 Q13 15 18 15 L24 15 M20 10 L26 15 L20 20" stroke="#02BFA6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+    else if(isActive&&state.maneuver==='left')path='<path d="M13 34 L13 20 Q13 15 8 15 L2 15 M6 10 L0 15 L6 20" stroke="#02BFA6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+    else path='<path d="M13 34 L13 8 M7 14 L13 6 L19 14" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+    lane.innerHTML=`<svg viewBox="0 0 26 38" style="color:#fff">${path}</svg>`;
+    c.appendChild(lane);
+  }
+}
+function renderInstruction(){
+  const a=document.getElementById('instr-arrow');let svg;
+  if(state.maneuver==='right')svg='<path d="M14 40 L14 24 Q14 18 20 18 L30 18" stroke="#02BFA6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M25 11 L33 18 L25 25" stroke="#02BFA6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+  else if(state.maneuver==='left')svg='<path d="M34 40 L34 24 Q34 18 28 18 L18 18" stroke="#02BFA6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M23 11 L15 18 L23 25" stroke="#02BFA6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+  else svg='<path d="M24 40 L24 12" stroke="#02BFA6" stroke-width="5" stroke-linecap="round"/><path d="M15 21 L24 10 L33 21" stroke="#02BFA6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+  a.innerHTML=`<svg viewBox="0 0 48 48" fill="none">${svg}</svg>`;
+  const streets={right:'Av. de l\'Arsenal',left:'Rue Toufaire',straight:'D733 Rochefort'};
+  document.getElementById('instr-street').textContent=streets[state.maneuver];
+  document.getElementById('mns-street').textContent=streets[state.maneuver];
+}
+function update(){
+  document.getElementById('instr-dist').innerHTML=state.dist>=1000?(state.dist/1000).toFixed(1)+'<small>km</small>':Math.round(state.dist/10)*10+'<small>m</small>';
+  document.getElementById('mns-dist').textContent=state.dist>=1000?(state.dist/1000).toFixed(1)+' km':Math.round(state.dist/10)*10+' m';
+  document.getElementById('cs-num').textContent=Math.round(state.speed);
+  const over=state.speed>state.limit;
+  document.getElementById('current-speed').classList.toggle('over',over);
+  document.getElementById('speed-limit').textContent=state.limit;
+  document.getElementById('speed-limit').classList.toggle('over',over);
+  drawMap();
+}
+
+/* simu trajet */
+let driving=false,raf=null;
+function driveStep(){
+  if(!driving)return;
+  state.roadOffset+=state.speed*0.04;state.dist-=state.speed*0.05;
+  if(state.dist<0){const ms=['right','left','straight'];state.maneuver=ms[Math.floor(Math.random()*ms.length)];state.dist=600+Math.random()*1000;renderInstruction();renderLanes();}
+  if(playing){trackPos+=1/60;if(trackPos>=TRACKS[trackIdx].dur)nextTrack();updateProgress();}
+  update();raf=requestAnimationFrame(driveStep);
+}
+function toggleDrive(){driving=!driving;const b=document.getElementById('btn-drive');if(driving){b.textContent='⏹ Stop';b.classList.add('active');driveStep();}else{b.textContent='▶ Simuler trajet';b.classList.remove('active');if(raf)cancelAnimationFrame(raf);}}
+
+/* tick progression musique même sans drive */
+setInterval(()=>{if(playing&&!driving){trackPos+=1;if(trackPos>=TRACKS[trackIdx].dur)nextTrack();updateProgress();}},1000);
+
+/* init */
+renderInstruction();renderLanes();loadTrack();update();
+</script>
+</body>
+</html>

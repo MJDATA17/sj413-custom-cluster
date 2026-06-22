@@ -1,0 +1,26 @@
+{
+  "name": "TVA / Minitel",
+  "render_style": "tva_crt",
+  "crt": true,
+  "fonts": {
+    "import": "https://fonts.googleapis.com/css2?family=VT323&family=Special+Elite&display=swap",
+    "display": "VT323, monospace",
+    "mono": "VT323, monospace"
+  },
+  "vars": {
+    "--accent": "#FFB000",
+    "--accent-2": "#9a6a00",
+    "--alert": "#E8622A",
+    "--amber": "#FFB000",
+    "--bg-cluster": "#0a0805",
+    "--bg-nav": "#0d0a04",
+    "--text": "#FFB000",
+    "--text-dim": "#9a6a00"
+  },
+  "canvas": {
+    "amber": "#FFB000",
+    "amberDim": "#9a6a00",
+    "amberFaint": "#4a3300",
+    "rust": "#E8622A"
+  }
+}

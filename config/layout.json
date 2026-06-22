@@ -1,0 +1,37 @@
+{
+  "_doc": "Positions/scale des éléments de l'app principale (1920×720). Généré/édité par l'éditeur du design 01. x,y en px dans le viewport 1920×720, scale = facteur sur la taille de base de l'élément.",
+  "viewport": {
+    "w": 1920,
+    "h": 720
+  },
+  "elements": {
+    "el-speedo": {
+      "x": 31,
+      "y": 21,
+      "scale": 1,
+      "baseW": 680,
+      "baseH": 680
+    },
+    "el-fuel": {
+      "x": 752,
+      "y": 50,
+      "scale": 1.25,
+      "baseW": 150,
+      "baseH": 200
+    },
+    "el-temp": {
+      "x": 752,
+      "y": 360,
+      "scale": 1.25,
+      "baseW": 150,
+      "baseH": 200
+    },
+    "el-nav": {
+      "x": 998,
+      "y": 55,
+      "scale": 0.94,
+      "baseW": 680,
+      "baseH": 680
+    }
+  }
+}

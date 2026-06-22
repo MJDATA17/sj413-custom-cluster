@@ -1,0 +1,24 @@
+{
+  "name": "Cyberpunk",
+  "render_style": "mjdata",
+  "crt": true,
+  "fonts": {
+    "import": "https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;900&family=Share+Tech+Mono&display=swap",
+    "display": "Orbitron, sans-serif",
+    "mono": "Share Tech Mono, monospace"
+  },
+  "vars": {
+    "--accent": "#00F0FF",
+    "--accent-2": "#FF00A8",
+    "--alert": "#FF1B6B",
+    "--amber": "#FFE600",
+    "--bg-cluster": "#05010F",
+    "--bg-nav": "#0A0420",
+    "--text": "#EAFBFF",
+    "--text-dim": "rgba(0,240,255,0.45)"
+  },
+  "canvas": {
+    "speedoWhite": "#EAFBFF",
+    "rpmGrad": ["#00F0FF", "#FF00A8", "#FFE600", "#FF1B6B"]
+  }
+}

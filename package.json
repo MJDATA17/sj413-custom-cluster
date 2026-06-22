@@ -1,0 +1,24 @@
+{
+  "name": "mjdata-cluster",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cluster numérique custom MJ Data pour Suzuki Samurai SJ413 — cible 1920×720",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server/index.js",
+    "sim": "node sim/fake-vehicle.js",
+    "dev": "concurrently -n SIM,WEB -c magenta,cyan \"node sim/fake-vehicle.js\" \"node server/index.js\"",
+    "sim:scenario": "node sim/fake-vehicle.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

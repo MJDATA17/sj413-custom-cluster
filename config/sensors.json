@@ -1,0 +1,31 @@
+{
+  "_doc": "Constantes de calibration. Valeurs à AJUSTER sur le vrai véhicule (voir docs/CALIBRATION.md). En SIM, fake-vehicle.js s'en sert pour générer des bruts cohérents.",
+  "rpm": {
+    "_doc": "4 cyl. 4 temps : RPM = freq_pulses * 60 / 2. pulses_per_rev=2 (1 étincelle / 2 tours sur chaque cylindre, 2 cyl. allumés par tour).",
+    "pulses_per_rev": 2,
+    "max_rpm": 8000,
+    "idle_rpm": 850
+  },
+  "fuel": {
+    "_doc": "Sonde résistive réservoir → ADS1115. Plage ohms à mesurer réservoir plein/vide. Courbe linéaire par défaut, à remplacer par points mesurés.",
+    "ohm_full": 10,
+    "ohm_empty": 90,
+    "reserve_pct": 15,
+    "adc_noise_ohm": 1.5
+  },
+  "temp": {
+    "_doc": "Sonde NTC culasse → ADS1115. Courbe Steinhart-Hart ou table à calibrer. Seuils d'alerte en °C.",
+    "ntc_beta": 3950,
+    "ntc_r25": 2500,
+    "series_resistor": 2200,
+    "warn_amber_c": 100,
+    "warn_red_c": 110,
+    "adc_noise_c": 1.0
+  },
+  "speed": {
+    "_doc": "Vitesse via GPS u-blox (jauge uniquement). Latence et pertes de fix simulées.",
+    "max_kmh": 140,
+    "gps_latency_ms": 1000,
+    "gps_fix_loss_prob": 0.02
+  }
+}

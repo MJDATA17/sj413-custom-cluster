@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>MJ Data Cluster — Mode Édition</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&family=Montserrat:wght@300;400;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;}
+body{font-family:'Geist Mono',monospace;}
+
+#viewport{
+  position:absolute;top:0;left:0;
+  width:1920px;height:720px;
+  transform-origin:top left;
+  background:#000;overflow:hidden;
+}
+#stage{position:absolute;inset:0;background:#000;}
+
+/* ═══ ÉLÉMENTS ═══
+   Chaque élément a une taille de BASE fixe + un transform scale.
+   wrapper = positionnement (left/top) + scale
+   content = taille de base fixe, tout le contenu est dimensionné par rapport à elle
+*/
+.el{
+  position:absolute;
+  transform-origin:top left;
+}
+.el-content{
+  position:relative;
+  transform-origin:top left;
+}
+.el.editing .el-content{
+  outline:1px dashed rgba(2,191,166,0.5);
+}
+.el.editing.selected .el-content{
+  outline:2px solid #02BFA6;
+}
+.el.editing{cursor:move;}
+.el.editing.selected{z-index:1000 !important;}
+
+.resize-handle{
+  position:absolute;
+  width:16px;height:16px;
+  background:#02BFA6;border:2px solid #000;border-radius:50%;
+  cursor:nwse-resize;display:none;z-index:1001;
+}
+.el.editing.selected .resize-handle{display:block;}
+
+/* ─── SPEEDO (base 680×680) ─── */
+#el-speedo .el-content{width:680px;height:680px;}
+.speedo-bg{position:absolute;inset:0;border-radius:50%;background:radial-gradient(ellipse at center,#02d4b6 0%,#02BFA6 42%,#018f7c 78%,#016960 100%);}
+.speedo-bg::after{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(ellipse at center,transparent 48%,rgba(0,0,0,0.55) 100%);}
+#speedo-canvas{position:absolute;inset:0;width:680px;height:680px;z-index:1;}
+.speedo-center{position:absolute;bottom:190px;left:0;width:680px;text-align:center;pointer-events:none;z-index:2;}
+.speedo-num{font-family:'Montserrat',sans-serif;font-weight:900;font-size:120px;color:#fff;letter-spacing:-0.05em;line-height:1;text-shadow:0 2px 30px rgba(0,0,0,0.4);}
+.speedo-unit{font-size:16px;color:rgba(255,255,255,0.45);letter-spacing:0.35em;margin-top:4px;}
+.mj-wm{position:absolute;bottom:55px;left:0;width:680px;display:flex;align-items:center;justify-content:center;gap:9px;opacity:0.3;z-index:2;}
+.mj-wm svg{width:22px;height:22px;}
+.mj-wm span{font-family:'Montserrat',sans-serif;font-weight:900;font-size:14px;letter-spacing:0.25em;color:#fff;}
+
+/* ─── JAUGES CENTRALES (base 30×40mm → ratio 3:4) ───
+   Fenêtre réelle 30×40mm. À 200ppp ça fait ~236×315px.
+   On part sur une base 150×200px (ratio 3:4 identique).
+   Barre verticale oblique qui remplit toute la fenêtre.
+   Valeur en blanc, plein centre, par-dessus.
+*/
+#el-fuel .el-content{width:150px;height:200px;}
+#el-temp .el-content{width:150px;height:200px;}
+
+.gauge-window{
+  position:absolute;inset:0;
+  background:#0a0a0a;
+  border:1px solid #1a1a1a;
+  border-radius:4px;
+  overflow:hidden;
+}
+/* la barre est légèrement oblique via skew, et déborde pour couvrir les coins */
+.gauge-bar-clip{
+  position:absolute;
+  inset:-20px;          /* déborde pour que l'oblique couvre toute la fenêtre */
+  overflow:hidden;
+  transform:skewX(-7deg);
+}
+.gauge-bar-fill{
+  position:absolute;
+  left:0;right:0;bottom:0;
+  height:72%;
+  transition:height .8s cubic-bezier(.4,0,.2,1), background .6s ease;
+}
+/* graduations discrètes superposées */
+.gauge-ticks{
+  position:absolute;inset:0;z-index:2;pointer-events:none;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:8px 0;
+}
+.gauge-ticks span{
+  height:1px;width:30%;
+  background:rgba(255,255,255,0.08);
+  margin-left:6px;
+}
+/* label en haut */
+.gauge-top-label{
+  position:absolute;top:7px;left:0;width:100%;text-align:center;z-index:3;
+  font-size:11px;letter-spacing:0.25em;color:rgba(255,255,255,0.4);
+  text-transform:uppercase;pointer-events:none;
+}
+/* valeur centrale blanche */
+.gauge-center-val{
+  position:absolute;top:50%;left:0;width:100%;
+  transform:translateY(-50%);
+  text-align:center;z-index:4;pointer-events:none;
+  font-family:'Montserrat',sans-serif;font-weight:900;
+  font-size:44px;color:#fff;letter-spacing:-0.04em;line-height:1;
+  text-shadow:0 2px 12px rgba(0,0,0,0.7),0 0 30px rgba(0,0,0,0.5);
+}
+.gauge-center-val small{font-size:18px;font-weight:600;opacity:0.7;}
+
+/* logo réserve plein écran (carburant bas) */
+.fuel-reserve-logo{
+  position:absolute;inset:0;z-index:3;
+  display:none;
+  align-items:center;justify-content:center;
+  padding:6px;
+}
+.fuel-reserve-logo.active{display:flex;animation:reservePulse 1.1s ease-in-out infinite;}
+.fuel-reserve-logo svg{width:100%;height:100%;}
+@keyframes reservePulse{
+  0%,100%{opacity:1;}
+  50%{opacity:0.45;}
+}
+/* quand réserve active, la valeur passe au-dessus du logo en blanc */
+.gauge-center-val.over-logo{z-index:5;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,0.9),0 0 30px rgba(0,0,0,0.7);}
+
+/* clignotement température — toute la jauge se remplit de couleur */
+@keyframes tempBlinkAmber{
+  0%,100%{opacity:1;}
+  50%{opacity:0.3;}
+}
+@keyframes tempBlinkRed{
+  0%,100%{opacity:1;}
+  50%{opacity:0.25;}
+}
+/* overlay plein qui couvre toute la fenêtre */
+.temp-overlay{
+  position:absolute;inset:0;z-index:2;display:none;border-radius:4px;
+}
+.temp-overlay.warn-amber{
+  display:block;
+  background:linear-gradient(0deg,#f59e0b,#ffb838);
+  animation:tempBlinkAmber 0.7s ease-in-out infinite;
+}
+.temp-overlay.warn-red{
+  display:block;
+  background:linear-gradient(0deg,#ff4444,#ff6b6b);
+  animation:tempBlinkRed 0.5s ease-in-out infinite;
+}
+
+/* ─── AA (base 1000×680) ─── */
+#el-aa .el-content{width:1000px;height:680px;}
+.aa-inner{position:absolute;inset:0;background:#070707;border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.aa-map{position:absolute;inset:0;opacity:0.05;}
+.aa-content{display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0.2;z-index:1;}
+.aa-name{font-family:'Montserrat',sans-serif;font-weight:900;font-size:16px;letter-spacing:0.3em;color:#4285f4;text-transform:uppercase;}
+.aa-hint{font-size:10px;color:#1e1e1e;letter-spacing:0.2em;}
+
+/* ═══ TOOLBAR ═══ */
+.toolbar{position:fixed;top:0;left:0;right:0;background:rgba(8,8,8,0.97);border-bottom:1px solid #1a1a1a;padding:8px 14px;z-index:2000;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.toolbar.hidden{display:none;}
+.tb-title{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:900;color:#02BFA6;letter-spacing:0.15em;margin-right:8px;}
+.btn{background:#111;border:1px solid #1e1e1e;color:#02BFA6;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:0.12em;padding:6px 11px;cursor:pointer;border-radius:4px;white-space:nowrap;}
+.btn:hover{border-color:#02BFA6;}
+.btn.active{background:#02BFA6;color:#000;}
+.sep{width:1px;height:22px;background:#222;}
+.tb-info{font-size:9px;color:#555;letter-spacing:0.05em;}
+
+.precision{position:fixed;top:52px;right:14px;background:rgba(8,8,8,0.97);border:1px solid #1a1a1a;border-radius:8px;padding:12px;z-index:2000;width:240px;display:none;flex-direction:column;gap:6px;}
+.precision.active{display:flex;}
+.precision h3{font-family:'Montserrat',sans-serif;font-size:10px;color:#02BFA6;letter-spacing:0.1em;margin-bottom:4px;}
+.prec-row{display:flex;align-items:center;gap:8px;}
+.prec-row label{font-size:9px;color:#555;width:55px;flex-shrink:0;}
+.prec-row input[type=number]{width:62px;background:#111;border:1px solid #222;color:#02BFA6;font-family:'Geist Mono',monospace;font-size:10px;padding:3px 6px;border-radius:3px;}
+.prec-row input[type=range]{flex:1;}
+.prec-row .unit{font-size:8px;color:#444;width:32px;text-align:right;}
+
+.databar{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:14px;align-items:center;background:rgba(8,8,8,0.97);border:1px solid #1a1a1a;border-radius:8px;padding:8px 16px;z-index:2000;flex-wrap:wrap;justify-content:center;max-width:95vw;}
+.databar.hidden{display:none;}
+.ctrl{display:flex;align-items:center;gap:7px;}
+.ctrl label{font-size:8px;letter-spacing:0.12em;color:#2a2a2a;text-transform:uppercase;width:46px;}
+input[type=range]{width:80px;height:2px;-webkit-appearance:none;background:#1a1a1a;outline:none;border-radius:1px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:9px;border-radius:50%;background:#02BFA6;cursor:pointer;}
+.ctrl-v{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:900;color:#02BFA6;width:26px;text-align:right;}
+
+.fab{position:fixed;top:10px;left:10px;z-index:2001;width:36px;height:36px;border-radius:50%;background:rgba(2,191,166,0.15);border:1px solid #02BFA6;color:#02BFA6;font-size:16px;cursor:pointer;display:none;align-items:center;justify-content:center;}
+.fab.visible{display:flex;}
+</style>
+</head>
+<body>
+
+<div id="viewport">
+  <div id="stage">
+
+    <!-- SPEEDO -->
+    <div class="el" id="el-speedo" data-name="Compteur" data-base-w="680" data-base-h="680">
+      <div class="el-content">
+        <div class="speedo-bg"></div>
+        <canvas id="speedo-canvas" width="680" height="680"></canvas>
+        <div class="speedo-center">
+          <div class="speedo-num" id="speedo-num">0</div>
+          <div class="speedo-unit">KM/H</div>
+        </div>
+        <div class="mj-wm">
+          <svg viewBox="0 0 32 32" fill="none"><rect x="2" y="2" width="28" height="28" rx="5" fill="rgba(255,255,255,0.9)"/><path d="M7 23 L7 11 L16 20 L25 11 L25 23" stroke="#02BFA6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          <span>MJ DATA</span>
+        </div>
+      </div>
+      <div class="resize-handle"></div>
+    </div>
+
+    <!-- FUEL -->
+    <div class="el" id="el-fuel" data-name="Carburant" data-base-w="150" data-base-h="200">
+      <div class="el-content">
+        <div class="gauge-window" id="fuel-window">
+          <div class="gauge-bar-clip"><div class="gauge-bar-fill" id="fuel-fill"></div></div>
+          <div class="gauge-ticks"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="gauge-top-label" id="fuel-label">Carbu</div>
+          <!-- logo réserve plein écran : pompe à essence, masqué par défaut -->
+          <div class="fuel-reserve-logo" id="fuel-reserve">
+            <svg viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
+              <!-- corps de la pompe -->
+              <path d="M4 21 L4 5 a2 2 0 0 1 2-2 h6 a2 2 0 0 1 2 2 v16" stroke="#8B5CF6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              <!-- base -->
+              <path d="M2.5 21 h13" stroke="#8B5CF6" stroke-width="1.6" stroke-linecap="round"/>
+              <!-- fenêtre de niveau -->
+              <rect x="6" y="6" width="6" height="4.5" rx="0.6" stroke="#8B5CF6" stroke-width="1.3" fill="none"/>
+              <!-- tuyau + pistolet -->
+              <path d="M14 9 h2.5 a1.5 1.5 0 0 1 1.5 1.5 v6 a1.5 1.5 0 0 0 1.5 1.5 a1.5 1.5 0 0 0 1.5 -1.5 v-7 l-2 -2.5" stroke="#8B5CF6" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </div>
+          <div class="gauge-center-val" id="fuel-pct">72<small>%</small></div>
+        </div>
+      </div>
+      <div class="resize-handle"></div>
+    </div>
+
+    <!-- TEMP -->
+    <div class="el" id="el-temp" data-name="Température" data-base-w="150" data-base-h="200">
+      <div class="el-content">
+        <div class="gauge-window" id="temp-window">
+          <div class="gauge-bar-clip"><div class="gauge-bar-fill" id="temp-fill"></div></div>
+          <div class="gauge-ticks"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="temp-overlay" id="temp-overlay"></div>
+          <div class="gauge-top-label">Temp</div>
+          <div class="gauge-center-val" id="temp-val">85<small>°</small></div>
+        </div>
+      </div>
+      <div class="resize-handle"></div>
+    </div>
+
+    <!-- AA -->
+    <div class="el" id="el-aa" data-name="Android Auto" data-base-w="1000" data-base-h="680">
+      <div class="el-content">
+        <div class="aa-inner">
+          <svg class="aa-map" viewBox="0 0 1000 680" preserveAspectRatio="none">
+            <line x1="0" y1="180" x2="1000" y2="220" stroke="#4285f4" stroke-width="18"/>
+            <line x1="0" y1="360" x2="1000" y2="320" stroke="#4285f4" stroke-width="9"/>
+            <line x1="0" y1="510" x2="1000" y2="540" stroke="#4285f4" stroke-width="12"/>
+            <line x1="280" y1="0" x2="300" y2="680" stroke="#4285f4" stroke-width="7"/>
+            <line x1="580" y1="0" x2="560" y2="680" stroke="#4285f4" stroke-width="13"/>
+            <rect x="250" y="270" width="120" height="90" rx="5" fill="#4285f4"/>
+          </svg>
+          <div class="aa-content">
+            <svg width="56" height="56" viewBox="0 0 48 48" fill="none"><rect x="2" y="8" width="44" height="30" rx="5" stroke="#4285f4" stroke-width="2"/><path d="M10 32 L10 18 L20 28 L24 18 L28 28 L38 18 L38 32" stroke="#4285f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="24" cy="42" r="3" fill="#4285f4" opacity="0.6"/></svg>
+            <div class="aa-name">Android Auto · LIVI</div>
+            <div class="aa-hint">tactile · déplaçable</div>
+          </div>
+        </div>
+      </div>
+      <div class="resize-handle"></div>
+    </div>
+
+  </div>
+</div>
+
+<button class="fab" id="fab" onclick="toggleToolbar(true)">⚙</button>
+
+<div class="toolbar" id="toolbar">
+  <span class="tb-title">MJ DATA · ÉDITEUR</span>
+  <button class="btn active" id="btn-edit" onclick="toggleEdit()">✏ ÉDITION</button>
+  <button class="btn" id="btn-demo" onclick="toggleDemo()">▶ AUTO</button>
+  <div class="sep"></div>
+  <button class="btn" id="btn-fit" onclick="cycleFit()">⤢ 100%</button>
+  <div class="sep"></div>
+  <button class="btn" onclick="saveLayout()">💾 SAUVER</button>
+  <button class="btn" onclick="loadLayout()">📂 CHARGER</button>
+  <button class="btn" onclick="resetLayout()">↺ RESET</button>
+  <button class="btn" onclick="exportLayout()">⤓ EXPORT</button>
+  <div class="sep"></div>
+  <button class="btn" onclick="toggleToolbar(false)">✕ MASQUER</button>
+  <span class="tb-info" id="tb-info">Clique un élément · glisse pour bouger · poignée pour redimensionner</span>
+</div>
+
+<div class="precision" id="precision">
+  <h3 id="prec-name">Élément</h3>
+  <div class="prec-row"><label>X</label><input type="number" id="prec-x" step="1"><span class="unit">px</span></div>
+  <div class="prec-row"><label>Y</label><input type="number" id="prec-y" step="1"><span class="unit">px</span></div>
+  <div class="prec-row"><label>Taille</label><input type="range" id="prec-scale" min="20" max="250" value="100"><span class="unit" id="prec-scale-v">100%</span></div>
+  <div class="prec-row"><label></label><input type="number" id="prec-scale-num" step="1" style="width:62px;"><span class="unit">%</span></div>
+  <div class="prec-row" id="prec-shape-row"><label>Forme</label>
+    <select id="prec-shape" style="flex:1;background:#111;color:#888;border:1px solid #222;font-size:9px;padding:3px;">
+      <option value="default">défaut</option>
+      <option value="circle">cercle</option>
+      <option value="rounded">arrondi</option>
+      <option value="square">carré</option>
+    </select>
+  </div>
+  <div class="prec-row"><span class="unit" id="prec-realsize" style="width:100%;text-align:left;color:#555;"></span></div>
+</div>
+
+<div class="databar" id="databar">
+  <div class="ctrl"><label>Vitesse</label><input type="range" id="s-speed" min="0" max="140" value="0"><div class="ctrl-v" id="v-speed">0</div></div>
+  <div class="ctrl"><label>RPM</label><input type="range" id="s-rpm" min="0" max="8" value="0" step="0.1"><div class="ctrl-v" id="v-rpm">0.0</div></div>
+  <div class="ctrl"><label>Carbu</label><input type="range" id="s-fuel" min="0" max="100" value="72"><div class="ctrl-v" id="v-fuel">72</div></div>
+  <div class="ctrl"><label>Temp</label><input type="range" id="s-temp" min="20" max="130" value="85"><div class="ctrl-v" id="v-temp">85</div></div>
+</div>
+
+<script>
+/* ════ FIT ════ */
+let fitMode=1;
+function applyFit(){
+  const vp=document.getElementById('viewport');
+  const W=1920,H=720,availW=window.innerWidth,availH=window.innerHeight;
+  let scale;
+  if(fitMode===0)scale=Math.min(availW/W,availH/H);
+  else if(fitMode===1)scale=1;
+  else scale=availW/W;
+  vp.style.transform=`scale(${scale})`;
+}
+function cycleFit(){fitMode=(fitMode+1)%3;document.getElementById('btn-fit').textContent='⤢ '+['CONTAIN','100%','LARGEUR'][fitMode];applyFit();}
+window.addEventListener('resize',applyFit);
+function getScale(){const m=document.getElementById('viewport').style.transform.match(/scale\(([0-9.]+)\)/);return m?parseFloat(m[1]):1;}
+
+/* ════ ÉLÉMENTS — état position + scale ════ */
+const els=document.querySelectorAll('.el');
+const elState={}; // {id:{x,y,scale}}
+
+function initEl(el,x,y,scale){
+  elState[el.id]={x,y,scale};
+  applyElTransform(el);
+}
+function applyElTransform(el){
+  const s=elState[el.id];
+  el.style.left=s.x+'px';
+  el.style.top=s.y+'px';
+  // le scale s'applique sur le contenu interne
+  el.querySelector('.el-content').style.transform=`scale(${s.scale})`;
+  // la poignée de resize doit suivre le coin bas-droit réel (scaled)
+  const baseW=parseFloat(el.dataset.baseW);
+  const baseH=parseFloat(el.dataset.baseH);
+  const handle=el.querySelector('.resize-handle');
+  handle.style.left=(baseW*s.scale-8)+'px';
+  handle.style.top=(baseH*s.scale-8)+'px';
+}
+
+/* ════ ÉDITION ════ */
+let editMode=true,selectedEl=null;
+function toggleEdit(){
+  editMode=!editMode;
+  document.getElementById('btn-edit').classList.toggle('active',editMode);
+  els.forEach(el=>el.classList.toggle('editing',editMode));
+  if(!editMode)deselect();
+  document.getElementById('tb-info').textContent=editMode?'Clique un élément · glisse · poignée pour redimensionner · flèches au pixel':'Mode affichage — pose ta casquette sur l\'écran';
+}
+function selectEl(el){deselect();selectedEl=el;el.classList.add('selected');showPrecision(el);}
+function deselect(){if(selectedEl)selectedEl.classList.remove('selected');selectedEl=null;document.getElementById('precision').classList.remove('active');}
+
+function showPrecision(el){
+  const p=document.getElementById('precision');p.classList.add('active');
+  const s=elState[el.id];
+  document.getElementById('prec-name').textContent=el.dataset.name;
+  document.getElementById('prec-x').value=Math.round(s.x);
+  document.getElementById('prec-y').value=Math.round(s.y);
+  document.getElementById('prec-scale').value=Math.round(s.scale*100);
+  document.getElementById('prec-scale-num').value=Math.round(s.scale*100);
+  document.getElementById('prec-scale-v').textContent=Math.round(s.scale*100)+'%';
+  // taille réelle affichée
+  const baseW=parseFloat(el.dataset.baseW),baseH=parseFloat(el.dataset.baseH);
+  const realW=Math.round(baseW*s.scale),realH=Math.round(baseH*s.scale);
+  // conversion px → mm (1920px = 243.6mm)
+  const mmW=(realW/1920*243.6).toFixed(1),mmH=(realH/1920*243.6).toFixed(1);
+  document.getElementById('prec-realsize').textContent=`${realW}×${realH}px  ·  ${mmW}×${mmH}mm`;
+  // forme dispo seulement pour AA
+  document.getElementById('prec-shape-row').style.display=el.id==='el-aa'?'flex':'none';
+}
+
+/* drag + resize */
+let dragging=false,resizing=false,dragEl=null,sx,sy,sStartX,sStartY,sStartScale;
+els.forEach(el=>{
+  el.addEventListener('mousedown',e=>{
+    if(!editMode)return;
+    if(e.target.classList.contains('resize-handle')){
+      resizing=true;dragEl=el;sx=e.clientX;sy=e.clientY;
+      sStartScale=elState[el.id].scale;
+      selectEl(el);e.preventDefault();e.stopPropagation();return;
+    }
+    dragging=true;dragEl=el;sx=e.clientX;sy=e.clientY;
+    sStartX=elState[el.id].x;sStartY=elState[el.id].y;
+    selectEl(el);e.preventDefault();
+  });
+});
+document.addEventListener('mousemove',e=>{
+  const scale=getScale();
+  if(dragging&&dragEl){
+    elState[dragEl.id].x=sStartX+(e.clientX-sx)/scale;
+    elState[dragEl.id].y=sStartY+(e.clientY-sy)/scale;
+    applyElTransform(dragEl);
+    if(selectedEl===dragEl)showPrecision(dragEl);
+  }
+  if(resizing&&dragEl){
+    // resize proportionnel basé sur le déplacement diagonal
+    const baseW=parseFloat(dragEl.dataset.baseW);
+    const dx=(e.clientX-sx)/scale;
+    const newScale=Math.max(0.2,sStartScale+dx/baseW);
+    elState[dragEl.id].scale=newScale;
+    applyElTransform(dragEl);
+    if(selectedEl===dragEl)showPrecision(dragEl);
+  }
+});
+document.addEventListener('mouseup',()=>{dragging=false;resizing=false;dragEl=null;});
+document.getElementById('stage').addEventListener('mousedown',e=>{if(e.target.id==='stage'&&editMode)deselect();});
+
+/* precision inputs */
+document.getElementById('prec-x').addEventListener('input',e=>{if(selectedEl){elState[selectedEl.id].x=parseFloat(e.target.value)||0;applyElTransform(selectedEl);}});
+document.getElementById('prec-y').addEventListener('input',e=>{if(selectedEl){elState[selectedEl.id].y=parseFloat(e.target.value)||0;applyElTransform(selectedEl);}});
+function setScale(v){
+  if(!selectedEl)return;
+  const sc=Math.max(0.2,v/100);
+  elState[selectedEl.id].scale=sc;
+  applyElTransform(selectedEl);
+  showPrecision(selectedEl);
+}
+document.getElementById('prec-scale').addEventListener('input',e=>setScale(parseFloat(e.target.value)));
+document.getElementById('prec-scale-num').addEventListener('input',e=>setScale(parseFloat(e.target.value)));
+document.getElementById('prec-shape').addEventListener('change',e=>{
+  if(!selectedEl||selectedEl.id!=='el-aa')return;
+  const ai=selectedEl.querySelector('.aa-inner');
+  ai.style.borderRadius={circle:'50%',rounded:'24px',square:'0',default:'4px'}[e.target.value];
+});
+
+/* flèches clavier */
+document.addEventListener('keydown',e=>{
+  if(!editMode||!selectedEl)return;
+  if(document.activeElement.tagName==='INPUT')return;
+  const step=e.shiftKey?10:1;
+  if(e.key==='ArrowLeft'){elState[selectedEl.id].x-=step;e.preventDefault();}
+  else if(e.key==='ArrowRight'){elState[selectedEl.id].x+=step;e.preventDefault();}
+  else if(e.key==='ArrowUp'){elState[selectedEl.id].y-=step;e.preventDefault();}
+  else if(e.key==='ArrowDown'){elState[selectedEl.id].y+=step;e.preventDefault();}
+  else return;
+  applyElTransform(selectedEl);showPrecision(selectedEl);
+});
+
+/* ════ SAVE / LOAD / EXPORT ════ */
+let savedLayout=null;
+function captureLayout(){const o={};els.forEach(el=>{o[el.id]={...elState[el.id]};});return o;}
+function applyLayout(l){els.forEach(el=>{if(l[el.id]){elState[el.id]={...l[el.id]};applyElTransform(el);}});}
+function saveLayout(){savedLayout=captureLayout();flash('✓ Layout sauvé');}
+function loadLayout(){if(savedLayout)applyLayout(savedLayout);}
+function exportLayout(){const j=JSON.stringify(captureLayout(),null,2);const b=new Blob([j],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='cluster-layout.json';a.click();}
+function flash(msg){const i=document.getElementById('tb-info');i.textContent=msg;setTimeout(()=>{i.textContent='Clique un élément pour le modifier';},2000);}
+const DEFAULT={'el-speedo':{x:40,y:20,scale:1},'el-fuel':{x:730,y:110,scale:1},'el-temp':{x:730,y:330,scale:1},'el-aa':{x:900,y:20,scale:1}};
+function resetLayout(){applyLayout(JSON.parse(JSON.stringify(DEFAULT)));}
+
+/* ════ TOOLBAR ════ */
+function toggleToolbar(show){document.getElementById('toolbar').classList.toggle('hidden',!show);document.getElementById('databar').classList.toggle('hidden',!show);document.getElementById('fab').classList.toggle('visible',!show);if(!show)deselect();}
+
+/* ════ JAUGES ════ */
+const PI=Math.PI,RED='#ff4444',AMBER='#f59e0b',WHITE='#ffffff',TEAL='#02BFA6';
+function lerpC(c1,c2,t){const a=[1,3,5].map(i=>parseInt(c1.slice(i,i+2),16));const b=[1,3,5].map(i=>parseInt(c2.slice(i,i+2),16));return '#'+a.map((v,i)=>Math.round(v+(b[i]-v)*t).toString(16).padStart(2,'0')).join('');}
+function rpmColor(r){if(r<=3)return lerpC(WHITE,TEAL,r/3);if(r<=6)return lerpC(TEAL,AMBER,(r-3)/3);if(r<=7)return lerpC(AMBER,RED,r-6);return RED;}
+function drawAll(speed,rpm){
+  const c=document.getElementById('speedo-canvas'),ctx=c.getContext('2d');
+  const W=680,H=680,cx=W/2,cy=H/2; // canvas TOUJOURS 680, le scale CSS gère la taille
+  ctx.clearRect(0,0,W,H);
+  const START=PI*0.72,END=PI*2.28,TOTAL=END-START;
+  const R_out=300,R_sp=272,R_ta=232;
+  [R_out+10,R_out].forEach((r,i)=>{ctx.beginPath();ctx.arc(cx,cy,r,0,PI*2);ctx.strokeStyle=i===0?'rgba(255,255,255,0.28)':'rgba(255,255,255,0.12)';ctx.lineWidth=i===0?2.5:1.5;ctx.stroke();});
+  ctx.beginPath();ctx.arc(cx,cy,R_sp,START,END);ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=18;ctx.lineCap='round';ctx.stroke();
+  const sRS=START+TOTAL*(120/140);
+  ctx.beginPath();ctx.arc(cx,cy,R_sp,sRS,END);ctx.strokeStyle='rgba(255,68,68,0.2)';ctx.lineWidth=18;ctx.lineCap='round';ctx.stroke();
+  const sPct=Math.min(speed/140,1),sA=START+TOTAL*sPct;
+  if(speed>0){ctx.beginPath();ctx.arc(cx,cy,R_sp,START,Math.min(sA,sRS));ctx.strokeStyle='rgba(255,255,255,0.92)';ctx.lineWidth=13;ctx.lineCap='round';ctx.stroke();if(speed>120){ctx.beginPath();ctx.arc(cx,cy,R_sp,sRS,sA);ctx.strokeStyle=RED;ctx.lineWidth=13;ctx.lineCap='round';ctx.stroke();}}
+  for(let i=0;i<=56;i++){const a=START+TOTAL*i/56,v=140*i/56,maj=i%8===0,isR=v>=120;const len=maj?22:11,rO=R_sp-22,rI=rO-len;ctx.beginPath();ctx.moveTo(cx+rO*Math.cos(a),cy+rO*Math.sin(a));ctx.lineTo(cx+rI*Math.cos(a),cy+rI*Math.sin(a));ctx.strokeStyle=isR?(speed>=v?RED:'rgba(255,68,68,0.45)'):(maj?'rgba(255,255,255,0.65)':'rgba(255,255,255,0.2)');ctx.lineWidth=maj?3:1.2;ctx.stroke();}
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.font="900 18px 'Montserrat',sans-serif";
+  [0,20,40,60,80,100,120,140].forEach(v=>{const a=START+TOTAL*(v/140),lr=R_sp-92,isR=v>=120;ctx.fillStyle=isR?(speed>=v?RED:'rgba(255,68,68,0.7)'):'rgba(255,255,255,0.8)';ctx.fillText(v===0?'':String(v),cx+lr*Math.cos(a),cy+lr*Math.sin(a));});
+  ctx.beginPath();ctx.arc(cx,cy,R_sp-34,START-0.05,END+0.05);ctx.strokeStyle='rgba(0,0,0,0.4)';ctx.lineWidth=3;ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,R_ta,START,END);ctx.strokeStyle='rgba(0,0,0,0.25)';ctx.lineWidth=13;ctx.lineCap='round';ctx.stroke();
+  const rPct=Math.min(rpm/8,1);
+  if(rpm>0){const steps=80;for(let i=0;i<steps;i++){const t0=rPct*i/steps,t1=rPct*(i+1)/steps;if(t1>rPct)break;const a0=START+TOTAL*t0,a1=START+TOTAL*t1;ctx.beginPath();ctx.arc(cx,cy,R_ta,a0,a1);ctx.strokeStyle=rpmColor(rpm*(i+0.5)/steps);ctx.lineWidth=9;ctx.lineCap='butt';ctx.stroke();}}
+  for(let i=0;i<=40;i++){const a=START+TOTAL*i/40,maj=i%5===0,len=maj?12:7,rO=R_ta-16,rI=rO-len;ctx.beginPath();ctx.moveTo(cx+rO*Math.cos(a),cy+rO*Math.sin(a));ctx.lineTo(cx+rI*Math.cos(a),cy+rI*Math.sin(a));ctx.strokeStyle=maj?'rgba(255,255,255,0.35)':'rgba(255,255,255,0.12)';ctx.lineWidth=maj?2:1;ctx.stroke();}
+  const na=sA,nLen=R_ta-30,nBack=34,nCol=speed>=120?RED:WHITE;
+  ctx.save();ctx.shadowColor='rgba(0,0,0,0.5)';ctx.shadowBlur=12;ctx.beginPath();ctx.moveTo(cx-nBack*Math.cos(na),cy-nBack*Math.sin(na));ctx.lineTo(cx+nLen*Math.cos(na),cy+nLen*Math.sin(na));ctx.strokeStyle=nCol;ctx.lineWidth=4;ctx.lineCap='round';ctx.stroke();ctx.restore();
+  ctx.beginPath();ctx.arc(cx,cy,14,0,PI*2);ctx.fillStyle='rgba(0,0,0,0.65)';ctx.fill();ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,5,0,PI*2);ctx.fillStyle=nCol;ctx.fill();
+}
+function updateFuel(f){
+  const fill=document.getElementById('fuel-fill');
+  fill.style.height=f+'%';
+  const ts=Math.max(0,f-15);
+  fill.style.background=f<=20
+    ? 'linear-gradient(0deg,#6d1fd4,#8B5CF6)'
+    : `linear-gradient(0deg,#8B5CF6 0%,#8B5CF6 ${Math.max(0,ts-20)}%,#02BFA6 100%)`;
+  document.getElementById('fuel-pct').innerHTML=Math.round(f)+'<small>%</small>';
+
+  // Mode réserve : à 15% ou moins, logo MJ Data plein écran clignotant
+  const reserve=document.getElementById('fuel-reserve');
+  const pctEl=document.getElementById('fuel-pct');
+  const label=document.getElementById('fuel-label');
+  const bar=document.getElementById('fuel-fill');
+  if(f<=15){
+    reserve.classList.add('active');
+    pctEl.classList.add('over-logo');
+    label.style.opacity='0';      // on masque le label "Carbu" pour laisser place au logo
+    bar.style.opacity='0';        // on masque la barre, le logo prend tout
+  }else{
+    reserve.classList.remove('active');
+    pctEl.classList.remove('over-logo');
+    label.style.opacity='';
+    bar.style.opacity='';
+  }
+}
+function updateTemp(t){
+  const pct=(t-20)/110*100;
+  const fill=document.getElementById('temp-fill');
+  fill.style.height=pct+'%';
+  let grad;
+  if(t<50)       grad='linear-gradient(0deg,#1a2a45,#293A53)';
+  else if(t<100) grad='linear-gradient(0deg,#293A53 0%,#02BFA6 100%)';
+  else if(t<115) grad='linear-gradient(0deg,#02BFA6 0%,#f59e0b 100%)';
+  else           grad='linear-gradient(0deg,#f59e0b 0%,#ff4444 100%)';
+  fill.style.background=grad;
+  document.getElementById('temp-val').innerHTML=Math.round(t)+'<small>°</small>';
+
+  // Surchauffe : >100°C toute la jauge orange clignotante, >110°C rouge
+  const overlay=document.getElementById('temp-overlay');
+  overlay.classList.remove('warn-amber','warn-red');
+  if(t>110){
+    overlay.classList.add('warn-red');
+  }else if(t>100){
+    overlay.classList.add('warn-amber');
+  }
+}
+let state={speed:0,rpm:0,fuel:72,temp:85};
+function render(){drawAll(state.speed,state.rpm);document.getElementById('speedo-num').textContent=Math.round(state.speed);updateFuel(state.fuel);updateTemp(state.temp);}
+[['s-speed','speed','v-speed',v=>Math.round(v)],['s-rpm','rpm','v-rpm',v=>v.toFixed(1)],['s-fuel','fuel','v-fuel',v=>Math.round(v)],['s-temp','temp','v-temp',v=>Math.round(v)]].forEach(([id,key,vid,fmt])=>{document.getElementById(id).addEventListener('input',e=>{state[key]=parseFloat(e.target.value);document.getElementById(vid).textContent=fmt(state[key]);render();});});
+let demoOn=false,demoT=0,raf=null;
+function demoStep(){if(!demoOn)return;demoT+=0.01;state.speed=Math.max(0,Math.min(140,65+60*Math.sin(demoT*0.6)+12*Math.sin(demoT*2.1)));state.rpm=Math.max(0,Math.min(8,3.2+2.8*Math.sin(demoT*0.6+0.4)+0.6*Math.sin(demoT*1.9)));state.fuel=Math.max(0,Math.min(100,72-demoT*0.28));state.temp=Math.max(20,Math.min(130,85+28*Math.sin(demoT*0.18)));['speed','rpm','fuel','temp'].forEach(k=>{document.getElementById('s-'+k).value=state[k];const fmts={speed:v=>Math.round(v),rpm:v=>v.toFixed(1),fuel:v=>Math.round(v),temp:v=>Math.round(v)};document.getElementById('v-'+k).textContent=fmts[k](state[k]);});render();raf=requestAnimationFrame(demoStep);}
+function toggleDemo(){demoOn=!demoOn;const b=document.getElementById('btn-demo');if(demoOn){b.textContent='⏹ STOP';b.classList.add('active');demoStep();}else{b.textContent='▶ AUTO';b.classList.remove('active');if(raf)cancelAnimationFrame(raf);}}
+
+/* ════ INIT ════ */
+initEl(document.getElementById('el-speedo'),40,20,1);
+initEl(document.getElementById('el-fuel'),730,110,1);
+initEl(document.getElementById('el-temp'),730,330,1);
+initEl(document.getElementById('el-aa'),900,20,1);
+els.forEach(el=>el.classList.add('editing'));
+applyFit();
+render();
+</script>
+</body>
+</html>

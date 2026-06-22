@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>MJ Data — Skin TVA / Minitel</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Special+Elite&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;background:#0a0805;overflow:hidden;}
+body{font-family:'VT323',monospace;display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap;padding:24px;
+  background:radial-gradient(ellipse at 50% 50%,#15100a,#0a0805);}
+
+/* phosphore ambre */
+:root{
+  --amber:#FFB000;
+  --amber-dim:#9a6a00;
+  --amber-faint:#4a3300;
+  --amber-bg:#1a1205;
+  --rust:#E8622A;
+}
+
+.module{position:relative;}
+.module-label{position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);font-family:'VT323',monospace;font-size:15px;color:var(--amber-dim);letter-spacing:0.2em;white-space:nowrap;}
+
+/* ════ ENVELOPPE CRT MONOCHROME ════ */
+.crt{
+  position:relative;width:430px;height:430px;border-radius:50%;
+  background:#0d0a04;overflow:hidden;
+  box-shadow:0 0 0 10px #1a1408,0 0 0 13px #2a2010,0 0 0 15px #0a0805,
+    inset 0 0 90px rgba(0,0,0,0.95),0 14px 44px rgba(0,0,0,0.7);
+}
+.crt-inner{
+  position:absolute;inset:0;border-radius:50%;overflow:hidden;
+  background:radial-gradient(circle at 50% 44%,#161002 0%,#0d0a04 72%,#070500 100%);
+}
+.crt canvas{position:absolute;inset:0;width:430px;height:430px;z-index:2;}
+.crt-text{position:absolute;inset:0;z-index:4;pointer-events:none;font-family:'VT323',monospace;color:var(--amber);}
+
+/* scanlines */
+.scanlines{position:absolute;inset:0;z-index:6;pointer-events:none;border-radius:50%;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,0,0,0.35) 3px,rgba(0,0,0,0.35) 4px);}
+/* masque pixel (grille fine) */
+.pixmask{position:absolute;inset:0;z-index:5;pointer-events:none;border-radius:50%;
+  background:repeating-linear-gradient(90deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,0,0,0.12) 3px);}
+/* balayage */
+.sweep{position:absolute;left:0;right:0;height:30%;z-index:7;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(255,176,0,0.05),transparent);animation:sw 5s linear infinite;}
+@keyframes sw{0%{top:-30%;}100%{top:120%;}}
+/* vignette + flicker */
+.vig{position:absolute;inset:0;z-index:8;pointer-events:none;border-radius:50%;box-shadow:inset 0 0 90px rgba(0,0,0,0.9),inset 0 0 40px rgba(255,176,0,0.06);}
+.flick{position:absolute;inset:0;z-index:9;pointer-events:none;border-radius:50%;background:rgba(255,176,0,0.015);animation:fl 0.12s infinite;}
+@keyframes fl{50%{opacity:0.6;}}
+
+/* en-tête / pied de chaque écran */
+.scr-head{position:absolute;top:64px;left:0;width:100%;text-align:center;font-size:15px;letter-spacing:0.18em;color:var(--amber-dim);}
+.scr-foot{position:absolute;bottom:60px;left:0;width:100%;text-align:center;font-size:14px;letter-spacing:0.15em;color:var(--amber-faint);}
+
+/* ════ COMPTEUR : gros chiffre + barre de blocs ════ */
+.spd-big{position:absolute;top:120px;left:0;width:100%;text-align:center;font-size:130px;line-height:0.8;color:var(--amber);text-shadow:0 0 16px rgba(255,176,0,0.5);}
+.spd-unit{position:absolute;top:248px;left:0;width:100%;text-align:center;font-size:18px;letter-spacing:0.4em;color:var(--amber-dim);}
+.spd-bar{position:absolute;bottom:118px;left:50%;transform:translateX(-50%);font-size:22px;letter-spacing:1px;color:var(--amber);white-space:nowrap;text-shadow:0 0 8px rgba(255,176,0,0.4);}
+.rpm-bar{position:absolute;bottom:92px;left:50%;transform:translateX(-50%);font-size:16px;letter-spacing:1px;color:var(--amber-dim);white-space:nowrap;}
+
+/* ════ JAUGES MINI : barres de blocs verticales/horizontales ════ */
+.gauges-col{display:flex;flex-direction:column;gap:22px;}
+.mini-crt{position:relative;width:200px;height:200px;border-radius:50%;background:#0d0a04;overflow:hidden;
+  box-shadow:0 0 0 8px #1a1408,0 0 0 10px #2a2010,0 0 0 12px #0a0805,inset 0 0 50px rgba(0,0,0,0.9),0 8px 24px rgba(0,0,0,0.6);}
+.mini-inner{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 44%,#161002,#0d0a04 75%);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
+.mini-title{font-size:18px;letter-spacing:0.2em;color:var(--amber-dim);}
+.mini-blocks{font-size:26px;letter-spacing:2px;color:var(--amber);text-shadow:0 0 8px rgba(255,176,0,0.4);}
+.mini-val{font-size:32px;color:var(--amber);line-height:0.9;text-shadow:0 0 10px rgba(255,176,0,0.5);}
+.mini-status{font-size:14px;letter-spacing:0.15em;height:16px;color:var(--rust);}
+.mini-status.blink{animation:bk 0.6s infinite;}
+@keyframes bk{50%{opacity:0.2;}}
+.mini-crt .scanlines,.mini-crt .vig,.mini-crt .flick{border-radius:50%;}
+
+/* ════ CONTROLS ════ */
+.panel{display:flex;flex-direction:column;gap:11px;background:#120d06;border:1px solid #2a2010;border-radius:3px;padding:18px;width:240px;box-shadow:0 8px 30px rgba(0,0,0,0.6);}
+.panel h2{font-family:'VT323',monospace;font-size:18px;color:var(--amber);letter-spacing:0.1em;border-bottom:1px solid #2a2010;padding-bottom:6px;}
+.panel .stamp{font-family:'VT323',monospace;font-size:13px;color:var(--amber-faint);letter-spacing:0.1em;text-align:center;border:1px dashed #2a2010;padding:4px;}
+.panel .row{display:flex;align-items:center;gap:8px;}
+.panel label{font-size:14px;color:var(--amber-dim);letter-spacing:0.05em;width:60px;flex-shrink:0;font-family:'VT323',monospace;}
+.panel input[type=range]{flex:1;height:3px;-webkit-appearance:none;background:#2a2010;outline:none;}
+.panel input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:18px;background:var(--amber);cursor:pointer;}
+.panel .val{font-family:'VT323',monospace;font-size:18px;color:var(--amber);width:38px;text-align:right;}
+.panel button{background:#1a1408;border:1px solid #2a2010;color:var(--amber);font-family:'VT323',monospace;font-size:16px;letter-spacing:0.08em;padding:8px;cursor:pointer;}
+.panel button:hover{background:#2a2010;}
+.panel button.active{background:var(--amber);color:#0a0805;}
+</style>
+</head>
+<body>
+
+<!-- COMPTEUR -->
+<div class="module">
+  <div class="crt">
+    <div class="crt-inner"><canvas id="gauge-canvas" width="430" height="430"></canvas></div>
+    <div class="crt-text">
+      <div class="scr-head">█ VELOCITY █</div>
+      <div class="spd-big" id="spd-big">000</div>
+      <div class="spd-unit">K M / H</div>
+      <div class="spd-bar" id="spd-bar"></div>
+      <div class="rpm-bar" id="rpm-bar"></div>
+      <div class="scr-foot" id="spd-foot">SJ413 · FORM 2814-B</div>
+    </div>
+    <div class="pixmask"></div><div class="scanlines"></div><div class="sweep"></div><div class="vig"></div><div class="flick"></div>
+  </div>
+  <div class="module-label">VELOCITY MONITOR</div>
+</div>
+
+<!-- JAUGES -->
+<div class="gauges-col">
+  <div class="module">
+    <div class="mini-crt">
+      <div class="mini-inner">
+        <div class="mini-title">█ FUEL █</div>
+        <div class="mini-blocks" id="fuel-blocks"></div>
+        <div class="mini-val" id="fuel-val">72</div>
+        <div class="mini-status" id="fuel-status"></div>
+      </div>
+      <div class="scanlines"></div><div class="vig"></div><div class="flick"></div>
+    </div>
+  </div>
+  <div class="module">
+    <div class="mini-crt">
+      <div class="mini-inner">
+        <div class="mini-title">█ TEMP █</div>
+        <div class="mini-blocks" id="temp-blocks"></div>
+        <div class="mini-val" id="temp-val">85</div>
+        <div class="mini-status" id="temp-status"></div>
+      </div>
+      <div class="scanlines"></div><div class="vig"></div><div class="flick"></div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="module">
+  <div class="crt">
+    <div class="crt-inner"><canvas id="nav-canvas" width="430" height="430"></canvas></div>
+    <div class="crt-text">
+      <div class="scr-head" id="nav-head">█ ROUTE █</div>
+      <div style="position:absolute;top:96px;left:0;width:100%;text-align:center;">
+        <div style="font-size:54px;line-height:0.9;color:var(--amber);text-shadow:0 0 12px rgba(255,176,0,0.5);" id="nav-dist">800m</div>
+        <div style="font-size:22px;letter-spacing:0.1em;color:var(--amber);margin-top:2px;" id="nav-instr">&gt;&gt; DROITE &gt;&gt;</div>
+        <div style="font-size:15px;letter-spacing:0.12em;color:var(--amber-dim);margin-top:2px;" id="nav-street">AV. DE L'ARSENAL</div>
+      </div>
+      <div id="nav-lanes" style="position:absolute;bottom:128px;left:0;width:100%;text-align:center;font-size:30px;letter-spacing:6px;color:var(--amber-dim);"></div>
+      <div style="position:absolute;bottom:78px;left:0;width:100%;display:flex;align-items:center;justify-content:center;gap:30px;">
+        <div style="font-size:24px;color:var(--amber);border:2px solid var(--amber-dim);border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;">90</div>
+        <div style="font-size:40px;color:var(--amber);text-shadow:0 0 10px rgba(255,176,0,0.5);" id="nav-speed">76</div>
+      </div>
+      <div class="scr-foot">SECTOR 17 · ROCHEFORT</div>
+    </div>
+    <div class="pixmask"></div><div class="scanlines"></div><div class="sweep"></div><div class="vig"></div><div class="flick"></div>
+  </div>
+  <div class="module-label">TEMPORAL NAVIGATION</div>
+</div>
+
+<!-- CONTROLS -->
+<div class="panel">
+  <h2>TVA CONTROL</h2>
+  <div class="stamp">TIME VARIANCE AUTHORITY<br>TELEMETRY DIV.</div>
+  <div class="row"><label>VELOCITY</label><input type="range" id="s-speed" min="0" max="140" value="0"><div class="val" id="v-speed">0</div></div>
+  <div class="row"><label>RPM</label><input type="range" id="s-rpm" min="0" max="8" value="0" step="0.1"><div class="val" id="v-rpm">0</div></div>
+  <div class="row"><label>FUEL</label><input type="range" id="s-fuel" min="0" max="100" value="72"><div class="val" id="v-fuel">72</div></div>
+  <div class="row"><label>TEMP</label><input type="range" id="s-temp" min="20" max="130" value="85"><div class="val" id="v-temp">85</div></div>
+  <div class="row"><label>DIST</label><input type="range" id="s-dist" min="0" max="2000" value="800" step="50"><div class="val" id="v-dist">800</div></div>
+  <button onclick="toggleDrive()" id="btn-drive">&gt; ENGAGE TIMELINE</button>
+</div>
+
+<script>
+const AMBER='#FFB000',DIM='#9a6a00',FAINT='#4a3300',RUST='#E8622A';
+
+/* helper : barre de blocs ASCII */
+function blockBar(pct,len){
+  const filled=Math.round(pct*len);
+  return '█'.repeat(filled)+'░'.repeat(len-filled);
+}
+
+/* ════ COMPTEUR : arc en segments de blocs (pas d'aiguille) ════ */
+const gc=document.getElementById('gauge-canvas'),gx=gc.getContext('2d');
+const GW=430,GCX=215,GCY=215;
+function drawGauge(speed,rpm){
+  gx.clearRect(0,0,GW,GW);
+  const START=Math.PI*0.78,END=Math.PI*2.22,TOTAL=END-START,R=168;
+  const seg=44; // segments façon barregraphe radial
+  const sPct=Math.min(speed/140,1);
+  for(let i=0;i<seg;i++){
+    const t=i/seg, a=START+TOTAL*t;
+    const on=t<=sPct;
+    const v=140*t, isR=v>=120;
+    const rO=R, rI=R-22;
+    // segment = petit rectangle radial
+    gx.save();
+    gx.translate(GCX,GCY);gx.rotate(a+Math.PI/2);
+    gx.fillStyle=on?(isR?RUST:AMBER):'rgba(255,176,0,0.1)';
+    if(on){gx.shadowColor=isR?RUST:AMBER;gx.shadowBlur=8;}
+    gx.fillRect(-4,-(rO),8,(rO-rI));
+    gx.restore();
+  }
+  // graduations chiffres (style écran)
+  gx.textAlign='center';gx.textBaseline='middle';gx.font="22px 'VT323',monospace";
+  [0,20,40,60,80,100,120,140].forEach(v=>{
+    const a=START+TOTAL*(v/140),lr=R-42,isR=v>=120;
+    gx.fillStyle=isR?RUST:'rgba(255,176,0,0.55)';
+    gx.fillText(String(v),GCX+lr*Math.cos(a),GCY+lr*Math.sin(a));
+  });
+}
+
+/* ════ NAV : wireframe blocs ambre ════ */
+const nc=document.getElementById('nav-canvas'),nx=nc.getContext('2d');
+const NW=430,NCX=215;let roadOffset=0,maneuver='right';
+function drawNav(){
+  nx.clearRect(0,0,NW,NW);
+  // grille radar pointillée
+  nx.strokeStyle='rgba(255,176,0,0.08)';nx.lineWidth=1;
+  const off=roadOffset%46;
+  for(let i=-1;i<11;i++){const y=i*46+off;nx.beginPath();nx.setLineDash([3,6]);nx.moveTo(40,y);nx.lineTo(NW-40,y);nx.stroke();}
+  for(let i=1;i<9;i++){const x=i*48;nx.beginPath();nx.moveTo(x,50);nx.lineTo(x,NW-50);nx.stroke();}
+  nx.setLineDash([]);
+  // route en double trait ambre
+  nx.save();const turnY=NW*0.44;
+  function path(){nx.beginPath();nx.moveTo(NCX,NW);nx.lineTo(NCX,turnY+40);
+    if(maneuver==='right'){nx.quadraticCurveTo(NCX,turnY,NCX+55,turnY-8);nx.lineTo(NW,turnY-22);}
+    else{nx.lineTo(NCX,turnY-70);}}
+  path();nx.strokeStyle='rgba(255,176,0,0.25)';nx.lineWidth=44;nx.lineCap='round';nx.lineJoin='round';nx.stroke();
+  path();nx.strokeStyle=AMBER;nx.lineWidth=2;nx.shadowColor=AMBER;nx.shadowBlur=6;nx.stroke();nx.shadowBlur=0;
+  // bords route
+  nx.strokeStyle='rgba(255,176,0,0.4)';nx.lineWidth=1;
+  [-22,22].forEach(dx=>{nx.beginPath();nx.moveTo(NCX+dx,NW);nx.lineTo(NCX+dx,turnY+44);nx.stroke();});
+  // pointillé central
+  path();nx.setLineDash([8,12]);nx.lineDashOffset=-roadOffset*2;nx.strokeStyle='rgba(255,224,150,0.7)';nx.lineWidth=2;nx.stroke();nx.setLineDash([]);
+  nx.restore();
+  // marqueur position : chevron en traits
+  nx.save();nx.translate(NCX,NW*0.66);
+  nx.strokeStyle=AMBER;nx.lineWidth=2.5;nx.shadowColor=AMBER;nx.shadowBlur=8;
+  nx.beginPath();nx.moveTo(0,-14);nx.lineTo(11,11);nx.lineTo(0,3);nx.lineTo(-11,11);nx.closePath();nx.stroke();
+  nx.restore();
+}
+
+/* ════ STATE ════ */
+let state={speed:0,rpm:0,fuel:72,temp:85,dist:800};
+function render(){
+  drawGauge(state.speed,state.rpm);
+  drawNav();
+  // compteur texte
+  document.getElementById('spd-big').textContent=String(Math.round(state.speed)).padStart(3,'0');
+  document.getElementById('spd-bar').textContent='['+blockBar(state.speed/140,18)+']';
+  document.getElementById('rpm-bar').textContent='RPM '+blockBar(state.rpm/8,12)+' '+state.rpm.toFixed(1);
+  // jauges blocs
+  document.getElementById('fuel-blocks').textContent=blockBar(state.fuel/100,8);
+  document.getElementById('fuel-val').textContent=Math.round(state.fuel)+'%';
+  document.getElementById('temp-blocks').textContent=blockBar((state.temp-20)/110,8);
+  document.getElementById('temp-val').textContent=Math.round(state.temp)+'°';
+  // status
+  const fs=document.getElementById('fuel-status');
+  if(state.fuel<=15){fs.textContent='! REFUEL !';fs.classList.add('blink');}else{fs.textContent='';fs.classList.remove('blink');}
+  const ts=document.getElementById('temp-status');
+  if(state.temp>110){ts.textContent='!! OVERHEAT !!';ts.classList.add('blink');ts.style.color=RUST;}
+  else if(state.temp>100){ts.textContent='! HOT !';ts.classList.add('blink');ts.style.color=AMBER;}
+  else{ts.textContent='';ts.classList.remove('blink');}
+  // nav
+  document.getElementById('nav-dist').textContent=state.dist>=1000?(state.dist/1000).toFixed(1)+'km':Math.round(state.dist/10)*10+'m';
+  document.getElementById('nav-speed').textContent=Math.round(state.speed);
+  document.getElementById('nav-lanes').textContent='│ │ ▲';
+}
+[['s-speed','speed','v-speed'],['s-rpm','rpm','v-rpm'],['s-fuel','fuel','v-fuel'],['s-temp','temp','v-temp'],['s-dist','dist','v-dist']].forEach(([id,k,vid])=>{
+  document.getElementById(id).addEventListener('input',e=>{state[k]=parseFloat(e.target.value);document.getElementById(vid).textContent=k==='rpm'?state[k].toFixed(1):Math.round(state[k]);render();});
+});
+let driving=false,raf=null;
+function loop(){if(!driving)return;roadOffset+=state.speed*0.05+0.4;state.dist-=state.speed*0.05;if(state.dist<0)state.dist=600+Math.random()*1000;document.getElementById('s-dist').value=state.dist;render();raf=requestAnimationFrame(loop);}
+function toggleDrive(){driving=!driving;const b=document.getElementById('btn-drive');if(driving){b.textContent='> HALT';b.classList.add('active');loop();}else{b.textContent='> ENGAGE TIMELINE';b.classList.remove('active');if(raf)cancelAnimationFrame(raf);}}
+setInterval(()=>{if(!driving){roadOffset+=0.3;drawNav();}},60);
+render();
+</script>
+</body>
+</html>

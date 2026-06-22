@@ -1,0 +1,24 @@
+{
+  "name": "MJ Data",
+  "render_style": "mjdata",
+  "crt": false,
+  "fonts": {
+    "import": "https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Montserrat:wght@300;400;600;800;900&display=swap",
+    "display": "Montserrat, sans-serif",
+    "mono": "Geist Mono, monospace"
+  },
+  "vars": {
+    "--accent": "#02BFA6",
+    "--accent-2": "#8B5CF6",
+    "--alert": "#FF4444",
+    "--amber": "#f59e0b",
+    "--bg-cluster": "#080808",
+    "--bg-nav": "#0A0E14",
+    "--text": "#ffffff",
+    "--text-dim": "rgba(255,255,255,0.5)"
+  },
+  "canvas": {
+    "speedoWhite": "#ffffff",
+    "rpmGrad": ["#ffffff", "#02BFA6", "#f59e0b", "#FF4444"]
+  }
+}

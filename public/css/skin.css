@@ -1,0 +1,70 @@
+/* skin.css — variables de thème + overlay CRT + overrides du skin TVA.
+   Le skin mjdata = look d'origine (les vars ci-dessous servent de repli).
+   Le skin TVA recolore les surfaces principales en ambre/CRT. */
+
+:root{
+  --accent:#02BFA6; --accent-2:#8B5CF6; --alert:#FF4444; --amber:#f59e0b;
+  --bg-cluster:#080808; --bg-nav:#0A0E14; --text:#fff; --text-dim:rgba(255,255,255,0.5);
+  --font-display:'Montserrat',sans-serif; --font-mono:'Geist Mono',monospace;
+}
+
+/* ═══ Overlay CRT (scanlines + vignette + flicker), visible seulement skin .crt ═══ */
+#crt-overlay{position:absolute;inset:0;z-index:400;pointer-events:none;display:none;}
+body.crt #crt-overlay{display:block;}
+#crt-overlay .crt-scan{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,0,0,0.28) 3px,rgba(0,0,0,0.28) 4px);}
+#crt-overlay .crt-pix{position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,0,0,0.10) 3px);}
+#crt-overlay .crt-vig{position:absolute;inset:0;box-shadow:inset 0 0 220px rgba(0,0,0,0.85),inset 0 0 80px rgba(255,176,0,0.05);}
+#crt-overlay .crt-flick{position:absolute;inset:0;background:rgba(255,176,0,0.015);animation:crtflick .12s infinite;}
+@keyframes crtflick{50%{opacity:0.55;}}
+
+/* ════════════════════ SKIN TVA / MINITEL ════════════════════ */
+body.skin-tva{background:#0a0805;font-family:'VT323',monospace;}
+
+/* — compteur — */
+body.skin-tva .speedo-bg{background:radial-gradient(circle at 50% 44%,#161002 0%,#0d0a04 72%,#070500 100%);}
+body.skin-tva .speedo-bg::after{display:none;}
+body.skin-tva .speedo-num{font-family:'VT323',monospace;font-weight:400;color:var(--amber);text-shadow:0 0 16px rgba(255,176,0,0.5);letter-spacing:0;}
+body.skin-tva .speedo-unit{color:var(--text-dim);}
+body.skin-tva .mj-wm span{color:var(--amber);font-family:'VT323',monospace;}
+body.skin-tva .mj-wm svg rect{fill:rgba(255,176,0,0.9);}
+body.skin-tva .mj-wm svg path{stroke:#0a0805;}
+
+/* — jauges (carbu/temp) — */
+body.skin-tva .gauge-window{background:#0d0a04;border:1px solid #2a2010;border-radius:50%;}
+body.skin-tva .gauge-bar-clip{display:none;}
+body.skin-tva .gauge-center-val{font-family:'VT323',monospace;font-weight:400;color:var(--amber);text-shadow:0 0 10px rgba(255,176,0,0.5);}
+body.skin-tva .gauge-top-label{color:var(--text-dim);font-family:'VT323',monospace;}
+body.skin-tva .gauge-blocks{display:block;}
+body.skin-tva .fuel-reserve-logo svg path,body.skin-tva .fuel-reserve-logo svg rect{stroke:var(--amber);}
+
+/* barregraphe ASCII des jauges (affiché seulement en TVA) */
+.gauge-blocks{display:none;position:absolute;top:38px;left:0;width:100%;text-align:center;z-index:4;
+  font-family:'VT323',monospace;font-size:18px;letter-spacing:1px;color:var(--amber);text-shadow:0 0 6px rgba(255,176,0,0.4);}
+.gauge-status{display:none;position:absolute;bottom:18px;left:0;width:100%;text-align:center;z-index:4;
+  font-family:'VT323',monospace;font-size:13px;letter-spacing:0.1em;color:var(--alert);}
+body.skin-tva .gauge-status{display:block;}
+.gauge-status.blink{animation:tvaBlink .6s infinite;}
+@keyframes tvaBlink{50%{opacity:0.2;}}
+
+/* — nav : carte teintée ambre + texte VT323 — */
+body.skin-tva #nav-map{filter:sepia(1) saturate(2.2) hue-rotate(-12deg) brightness(0.72) contrast(1.1);}
+body.skin-tva .nav-circle{background:#0d0a04;box-shadow:0 0 0 1px rgba(255,176,0,0.1),inset 0 0 80px rgba(0,0,0,0.7);}
+body.skin-tva .nav-ring{border-color:rgba(255,176,0,0.2);}
+body.skin-tva .instruction{background:rgba(20,14,5,0.7);border-color:rgba(255,176,0,0.25);}
+body.skin-tva .instr-distance,body.skin-tva .cs-num{font-family:'VT323',monospace;color:var(--amber);text-shadow:0 0 12px rgba(255,176,0,0.4);}
+body.skin-tva .instr-street,body.skin-tva .instr-trip{color:var(--text-dim);font-family:'VT323',monospace;}
+body.skin-tva .instr-arrow svg path{stroke:var(--amber)!important;}
+body.skin-tva .nav-car svg path{fill:var(--amber);stroke:var(--amber);}
+body.skin-tva .nav-car svg circle{fill:rgba(255,176,0,0.12);}
+body.skin-tva .speed-limit{background:#0d0a04;border-color:var(--amber);color:var(--amber);font-family:'VT323',monospace;}
+body.skin-tva .lane.active{background:rgba(255,176,0,0.14);border-color:rgba(255,176,0,0.5);}
+body.skin-tva .roundabout-lane{background:rgba(255,176,0,0.14);border-color:rgba(255,176,0,0.5);}
+
+/* — panneaux génériques (musique, clavier, menus, calibration) — */
+body.skin-tva .music-mini,body.skin-tva .mf-tabs,body.skin-tva .sp-searchpill,body.skin-tva .kb-input-wrap{background:rgba(20,14,5,0.7);border-color:rgba(255,176,0,0.25);}
+body.skin-tva .mf-tab.active,body.skin-tva .key:active{background:var(--amber);color:#0a0805;}
+body.skin-tva .mini-title,body.skin-tva .mf-title,body.skin-tva .sp-name{color:var(--amber);font-family:'VT323',monospace;}
+body.skin-tva .mf-btn.play{background:var(--amber);}
+body.skin-tva .mini-cover,body.skin-tva .mf-cover{background:linear-gradient(135deg,#9a6a00,#FFB000);}
+body.skin-tva .mini-eq span{background:var(--amber);}
+body.skin-tva .key{font-family:'VT323',monospace;}

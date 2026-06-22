@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>MJ Data Nav — Clavier</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Montserrat:wght@400;600;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;}
+body{font-family:'Geist Mono',monospace;display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap;padding:20px;}
+
+.nav-circle{position:relative;width:680px;height:680px;border-radius:50%;overflow:hidden;background:#0A0E14;box-shadow:0 0 0 1px rgba(255,255,255,0.06),inset 0 0 80px rgba(0,0,0,0.6);}
+.nav-ring{position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(2,191,166,0.15);pointer-events:none;z-index:30;}
+.nav-ring::after{content:'';position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(255,255,255,0.04);}
+
+/* ═══ ÉCRAN CLAVIER ═══ */
+.kb-screen{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;padding:54px 50px 40px;}
+
+/* titre */
+.kb-header{font-family:'Geist Mono',monospace;font-size:11px;color:rgba(2,191,166,0.7);letter-spacing:0.25em;text-transform:uppercase;margin-bottom:14px;}
+
+/* champ de saisie */
+.kb-input-wrap{
+  width:88%;display:flex;align-items:center;gap:10px;
+  padding:14px 18px;border-radius:14px;
+  background:rgba(16,22,30,0.7);border:1px solid rgba(2,191,166,0.3);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);
+  margin-bottom:14px;
+}
+.kb-input-wrap svg{width:18px;height:18px;flex-shrink:0;}
+.kb-input{flex:1;font-family:'Montserrat',sans-serif;font-weight:600;font-size:19px;color:#fff;letter-spacing:0.01em;min-height:24px;text-align:left;overflow:hidden;white-space:nowrap;}
+.kb-input.empty::after{content:'Destination…';color:rgba(255,255,255,0.3);font-weight:400;}
+.kb-caret{display:inline-block;width:2px;height:20px;background:#02BFA6;vertical-align:middle;animation:blink 1s step-end infinite;margin-left:1px;}
+@keyframes blink{50%{opacity:0;}}
+
+/* suggestions autocomplétion */
+.kb-suggest{width:92%;display:flex;flex-direction:column;gap:6px;margin-bottom:16px;min-height:96px;}
+.suggest-item{
+  display:flex;align-items:center;gap:12px;padding:9px 14px;border-radius:11px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);
+  cursor:pointer;transition:all .15s;
+}
+.suggest-item:hover,.suggest-item.sel{background:rgba(2,191,166,0.12);border-color:rgba(2,191,166,0.4);}
+.suggest-icon{width:30px;height:30px;border-radius:8px;background:rgba(2,191,166,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.suggest-icon svg{width:16px;height:16px;}
+.suggest-text{display:flex;flex-direction:column;min-width:0;flex:1;}
+.suggest-name{font-family:'Montserrat',sans-serif;font-weight:600;font-size:14px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.suggest-addr{font-size:10px;color:rgba(255,255,255,0.45);letter-spacing:0.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.suggest-dist{font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;color:#02BFA6;flex-shrink:0;}
+
+/* ═══ CLAVIER EN ARC ═══ */
+.kb-keys{
+  width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:7px;
+  padding-bottom:4px;
+}
+.kb-row{display:flex;justify-content:center;gap:6px;}
+.key{
+  width:44px;height:44px;border-radius:11px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Montserrat',sans-serif;font-weight:600;font-size:18px;color:#e8e8e8;
+  cursor:pointer;transition:all .1s;user-select:none;
+}
+.key:hover{background:rgba(2,191,166,0.15);border-color:rgba(2,191,166,0.4);}
+.key:active{background:#02BFA6;color:#04121a;transform:scale(0.92);}
+.key.wide{width:62px;font-size:13px;}
+.key.space{width:160px;}
+.key.action{background:rgba(2,191,166,0.12);border-color:rgba(2,191,166,0.3);color:#02BFA6;}
+.key.action svg{width:20px;height:20px;}
+.key.go{background:#02BFA6;color:#04121a;width:62px;}
+.key.go svg{width:22px;height:22px;fill:#04121a;}
+
+.panel{display:flex;flex-direction:column;gap:14px;background:rgba(10,14,20,0.9);border:1px solid #1a2028;border-radius:12px;padding:20px;width:280px;}
+.panel h2{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;color:#02BFA6;letter-spacing:0.15em;text-transform:uppercase;}
+.panel p{font-size:11px;color:#667;line-height:1.6;}
+.panel kbd{background:#1a2028;border:1px solid #2a3540;border-radius:4px;padding:1px 6px;font-size:10px;color:#02BFA6;}
+</style>
+</head>
+<body>
+
+<div class="nav-circle">
+  <div class="kb-screen">
+    <div class="kb-header">Où allons-nous ?</div>
+
+    <!-- CHAMP -->
+    <div class="kb-input-wrap">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#02BFA6" stroke-width="2"/><path d="M21 21 L16 16" stroke="#02BFA6" stroke-width="2" stroke-linecap="round"/></svg>
+      <div class="kb-input empty" id="kb-input"></div>
+    </div>
+
+    <!-- SUGGESTIONS -->
+    <div class="kb-suggest" id="kb-suggest"></div>
+
+    <!-- CLAVIER -->
+    <div class="kb-keys" id="kb-keys"></div>
+  </div>
+
+  <div class="nav-ring"></div>
+</div>
+
+<div class="panel">
+  <h2>Clavier nav</h2>
+  <p>Clavier circulaire avec autocomplétion. Tape une destination — les suggestions apparaissent en temps réel depuis la base d'adresses.</p>
+  <p>En vrai : géocodage <kbd>Nominatim</kbd> (OSM) ou favoris locaux. Ici la recherche est simulée sur une base d'exemples autour de Rochefort.</p>
+  <p>Tu peux aussi taper au <kbd>clavier physique</kbd> pour tester.</p>
+</div>
+
+<script>
+const TEAL='#02BFA6';
+
+/* base d'adresses simulée (autour de Rochefort) */
+const PLACES=[
+  {name:'Résidence de l\'Arsenal Royal',addr:'Rue Toufaire, Rochefort',dist:'2.1 km',type:'fav'},
+  {name:'Rochefort Centre',addr:'Place Colbert, 17300',dist:'3.4 km',type:'city'},
+  {name:'Roumazières-Loubert',addr:'16270 Charente',dist:'88 km',type:'city'},
+  {name:'Royan',addr:'17200 Charente-Maritime',dist:'39 km',type:'city'},
+  {name:'La Rochelle',addr:'17000 Charente-Maritime',dist:'34 km',type:'city'},
+  {name:'Rochefort Gare',addr:'Av. Wilson, 17300',dist:'3.0 km',type:'poi'},
+  {name:'Saintes',addr:'17100 Charente-Maritime',dist:'42 km',type:'city'},
+  {name:'Rochefort Hôpital',addr:'Av. de Béligon, 17300',dist:'4.2 km',type:'poi'},
+  {name:'Tonnay-Charente',addr:'17430 Charente-Maritime',dist:'6.8 km',type:'city'},
+  {name:'Soubise',addr:'17780 Charente-Maritime',dist:'9.1 km',type:'city'},
+  {name:'Maison',addr:'Domicile',dist:'12 km',type:'fav'},
+  {name:'Bureau MJ Data',addr:'Rochefort',dist:'3.5 km',type:'fav'},
+];
+
+let text='';
+let selIdx=0;
+let mode='alpha'; // 'alpha' ou 'num'
+
+/* clavier AZERTY simplifié, lignes pensées pour tenir dans l'arc */
+const LAYOUT_ALPHA=[
+  ['A','Z','E','R','T','Y','U','I','O','P'],
+  ['Q','S','D','F','G','H','J','K','L','M'],
+  ['W','X','C','V','B','N','-','\'']
+];
+/* mode chiffres + ponctuation utile aux adresses */
+const LAYOUT_NUM=[
+  ['1','2','3','4','5','6','7','8','9','0'],
+  ['/','-','\'',',','.','°','bis','ter'],
+];
+
+function buildKeyboard(){
+  const c=document.getElementById('kb-keys');c.innerHTML='';
+  const layout=mode==='alpha'?LAYOUT_ALPHA:LAYOUT_NUM;
+  layout.forEach(row=>{
+    const r=document.createElement('div');r.className='kb-row';
+    row.forEach(k=>{
+      const key=document.createElement('div');
+      key.className='key'+(k.length>1?' wide':'');
+      key.textContent=k;
+      key.onclick=()=>type(k.length>1?k:k);
+      r.appendChild(key);
+    });
+    c.appendChild(r);
+  });
+  // rangée d'actions
+  const r=document.createElement('div');r.className='kb-row';
+  // bascule alpha/num
+  const tg=document.createElement('div');tg.className='key wide action';
+  tg.textContent=mode==='alpha'?'123':'ABC';
+  tg.onclick=()=>{mode=mode==='alpha'?'num':'alpha';buildKeyboard();};
+  // backspace
+  const bs=document.createElement('div');bs.className='key action';
+  bs.innerHTML='<svg viewBox="0 0 24 24" fill="none"><path d="M9 6 L3 12 L9 18 L21 18 L21 6 Z" stroke="#02BFA6" stroke-width="1.8" stroke-linejoin="round"/><path d="M13 10 L17 14 M17 10 L13 14" stroke="#02BFA6" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  bs.onclick=backspace;
+  // espace
+  const sp=document.createElement('div');sp.className='key space';sp.textContent='␣';
+  sp.onclick=()=>type(' ');
+  // go
+  const go=document.createElement('div');go.className='key go';
+  go.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 12 L20 12 M14 6 L20 12 L14 18" stroke="#04121a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+  go.onclick=go_nav;
+  r.appendChild(tg);r.appendChild(bs);r.appendChild(sp);r.appendChild(go);
+  c.appendChild(r);
+}
+
+function type(ch){text+=ch;render();}
+function backspace(){text=text.slice(0,-1);render();}
+function go_nav(){
+  const s=filtered();
+  if(s.length>0){
+    const dest=s[selIdx]||s[0];
+    document.getElementById('kb-header').textContent='→ '+dest.name;
+  }
+}
+
+function filtered(){
+  if(!text.trim())return PLACES.slice(0,3); // favoris/récents par défaut
+  const t=text.toLowerCase();
+  return PLACES.filter(p=>p.name.toLowerCase().includes(t)||p.addr.toLowerCase().includes(t)).slice(0,4);
+}
+
+function iconFor(type){
+  if(type==='fav')return '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3 L14.5 9 L21 9.5 L16 14 L17.5 20.5 L12 17 L6.5 20.5 L8 14 L3 9.5 L9.5 9 Z" stroke="#02BFA6" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+  if(type==='poi')return '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2 C8 2 5 5 5 9 C5 14 12 22 12 22 C12 22 19 14 19 9 C19 5 16 2 12 2 Z" stroke="#02BFA6" stroke-width="1.5"/><circle cx="12" cy="9" r="2.5" stroke="#02BFA6" stroke-width="1.5"/></svg>';
+  return '<svg viewBox="0 0 24 24" fill="none"><path d="M3 21 L3 9 L12 3 L21 9 L21 21" stroke="#02BFA6" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 21 L9 14 L15 14 L15 21" stroke="#02BFA6" stroke-width="1.5"/></svg>';
+}
+
+function render(){
+  // champ
+  const inp=document.getElementById('kb-input');
+  if(text){inp.classList.remove('empty');inp.innerHTML=text+'<span class="kb-caret"></span>';}
+  else{inp.classList.add('empty');inp.innerHTML='<span class="kb-caret"></span>';}
+
+  // suggestions
+  const s=filtered();
+  if(selIdx>=s.length)selIdx=0;
+  const c=document.getElementById('kb-suggest');c.innerHTML='';
+  s.forEach((p,i)=>{
+    const item=document.createElement('div');
+    item.className='suggest-item'+(i===selIdx?' sel':'');
+    item.innerHTML=`<div class="suggest-icon">${iconFor(p.type)}</div>
+      <div class="suggest-text"><div class="suggest-name">${p.name}</div><div class="suggest-addr">${p.addr}</div></div>
+      <div class="suggest-dist">${p.dist}</div>`;
+    item.onclick=()=>{selIdx=i;go_nav();};
+    c.appendChild(item);
+  });
+}
+
+/* clavier physique pour test */
+document.addEventListener('keydown',e=>{
+  if(e.key.length===1&&/[a-zA-Z0-9\- ',./°]/.test(e.key)){type(e.key.toUpperCase());e.preventDefault();}
+  else if(e.key==='Backspace'){backspace();e.preventDefault();}
+  else if(e.key==='Enter'){go_nav();e.preventDefault();}
+  else if(e.key==='ArrowDown'){selIdx=(selIdx+1)%filtered().length;render();e.preventDefault();}
+  else if(e.key==='ArrowUp'){selIdx=(selIdx-1+filtered().length)%filtered().length;render();e.preventDefault();}
+});
+
+buildKeyboard();
+render();
+</script>
+</body>
+</html>

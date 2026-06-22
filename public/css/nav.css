@@ -1,0 +1,76 @@
+/* nav.css — repris du design 02 (cercle nav, carte, instruction, lanes, data bas) */
+
+#el-nav .el-content{width:680px;height:680px;}
+.nav-circle{position:relative;width:680px;height:680px;border-radius:50%;overflow:hidden;background:#0A0E14;box-shadow:0 0 0 1px rgba(255,255,255,0.06),inset 0 0 80px rgba(0,0,0,0.6);}
+.nav-ring{position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(2,191,166,0.15);pointer-events:none;z-index:30;}
+.nav-ring::after{content:'';position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(255,255,255,0.04);}
+#map-canvas{position:absolute;inset:0;width:680px;height:680px;z-index:1;}
+.veil-top{position:absolute;top:0;left:0;right:0;height:150px;z-index:5;background:linear-gradient(180deg,rgba(10,14,20,0.85) 0%,rgba(10,14,20,0.4) 50%,transparent 100%);pointer-events:none;}
+.veil-bottom{position:absolute;bottom:0;left:0;right:0;height:360px;z-index:5;background:linear-gradient(0deg,rgba(10,14,20,0.97) 0%,rgba(10,14,20,0.85) 55%,transparent 100%);pointer-events:none;}
+
+/* INSTRUCTION (tuile translucide, tap → clavier) */
+.instruction{position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:10;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:18px 34px 16px;background:rgba(16,22,30,0.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.08);border-radius:22px;box-shadow:0 8px 32px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.06);cursor:pointer;transition:border-color .2s;}
+.instruction:hover{border-color:rgba(2,191,166,0.4);}
+.instr-arrow{width:62px;height:62px;display:flex;align-items:center;justify-content:center;margin-bottom:2px;}
+.instr-arrow svg{width:100%;height:100%;filter:drop-shadow(0 0 12px rgba(2,191,166,0.5));}
+.instr-distance{font-family:'Montserrat',sans-serif;font-weight:900;font-size:56px;color:#fff;letter-spacing:-0.03em;line-height:1;}
+.instr-distance small{font-size:24px;font-weight:600;color:rgba(255,255,255,0.5);margin-left:2px;}
+.instr-street{font-family:'Geist Mono',monospace;font-weight:400;font-size:16px;color:#02BFA6;letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;}
+.instr-trip{display:none;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);font-family:'Geist Mono',monospace;font-size:14px;color:rgba(255,255,255,0.6);letter-spacing:0.06em;}
+.instr-trip.show{display:block;}
+.instr-trip b{font-family:'Montserrat',sans-serif;font-weight:800;color:#fff;font-size:15px;}
+
+/* indications de file retirées (se superposaient) ; la manœuvre reste dans l'encart du haut */
+.lanes{position:absolute;bottom:330px;left:0;right:0;z-index:10;display:none;justify-content:center;gap:9px;}
+.lane{width:46px;height:60px;border-radius:7px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;transition:all .4s ease;}
+.lane svg{width:26px;height:38px;opacity:0.28;transition:all .4s ease;}
+.lane.active{background:rgba(2,191,166,0.14);border-color:rgba(2,191,166,0.6);box-shadow:0 0 20px rgba(2,191,166,0.25),inset 0 0 14px rgba(2,191,166,0.1);}
+.lane.active svg{opacity:1;filter:drop-shadow(0 0 6px rgba(2,191,166,0.6));}
+
+/* tuile rond-point (remplace les voies à l'approche d'un rond-point) */
+.roundabout-lane{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 18px;border-radius:12px;background:rgba(2,191,166,0.14);border:1px solid rgba(2,191,166,0.55);box-shadow:0 0 20px rgba(2,191,166,0.25),inset 0 0 14px rgba(2,191,166,0.08);}
+.roundabout-lane svg{width:56px;height:56px;filter:drop-shadow(0 0 6px rgba(2,191,166,0.5));}
+.roundabout-lane span{font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;color:#fff;letter-spacing:0.04em;}
+
+.bottom-data{position:absolute;bottom:130px;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:center;gap:42px;}
+.speed-limit{width:76px;height:76px;border-radius:50%;background:#fff;border:6px solid #E5322B;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-weight:900;font-size:30px;color:#111;box-shadow:0 2px 12px rgba(0,0,0,0.4);}
+.speed-limit.over{animation:limitAlert .6s ease-in-out infinite;}
+@keyframes limitAlert{0%,100%{box-shadow:0 0 0 rgba(229,50,43,0);}50%{box-shadow:0 0 24px rgba(229,50,43,0.8);}}
+.current-speed{display:flex;flex-direction:column;align-items:center;}
+.cs-num{font-family:'Montserrat',sans-serif;font-weight:900;font-size:68px;color:#fff;letter-spacing:-0.04em;line-height:0.9;}
+.cs-unit{font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:0.25em;margin-top:3px;}
+.current-speed.over .cs-num{color:#FF4444;text-shadow:0 0 20px rgba(255,68,68,0.5);}
+
+/* ═══ Carte Leaflet cap-en-haut (jalon 6) ═══
+   Conteneur surdimensionné (960×960) centré dans le cercle 680 et masqué par lui,
+   pour que la rotation (cap véhicule) ne révèle jamais les coins. */
+.nav-map-wrap{position:absolute;inset:0;z-index:1;overflow:hidden;border-radius:50%;}
+/* carte décalée vers le bas (top -40 au lieu de -140) → le véhicule est sous le centre,
+   on voit plus de route devant. La rotation pivote autour du véhicule. */
+#nav-map{position:absolute;width:960px;height:960px;left:-140px;top:-40px;background:#0A0E14;transform-origin:center center;}
+#nav-map.no-rotate{transition:none;}
+/* tuiles sombres adoucies + route teal par-dessus */
+.leaflet-container{background:#0A0E14;font-family:'Geist Mono',monospace;}
+.leaflet-control-attribution{background:rgba(10,14,20,0.6)!important;color:rgba(255,255,255,0.35)!important;font-size:8px!important;padding:0 4px!important;}
+.leaflet-control-attribution a{color:rgba(2,191,166,0.5)!important;}
+.route-line{filter:drop-shadow(0 0 6px rgba(2,191,166,0.6));}
+
+/* marqueur véhicule : toujours au centre, pointe vers le haut (sens de marche) */
+.nav-car{position:absolute;top:440px;left:50%;width:44px;height:44px;transform:translate(-50%,-50%);z-index:6;pointer-events:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6));}
+.nav-car svg{width:100%;height:100%;}
+
+/* bouton voix */
+.nav-voice{position:absolute;top:24px;left:26px;z-index:12;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(16,22,30,0.6);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+.nav-voice svg{width:20px;height:20px;}
+.nav-voice.off{color:rgba(255,255,255,0.35);}
+.nav-voice.on{color:#02BFA6;border-color:rgba(2,191,166,0.5);box-shadow:0 0 14px rgba(2,191,166,0.25);}
+
+/* alerte radar (approche) */
+.radar-alert{position:absolute;top:120px;left:26px;z-index:12;display:none;align-items:center;gap:10px;padding:8px 12px 8px 10px;border-radius:16px;background:rgba(16,22,30,0.7);border:1px solid rgba(255,68,68,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 6px 20px rgba(0,0,0,0.4);}
+.radar-alert.show{display:flex;}
+.radar-alert.imminent{animation:radarPulse .6s ease-in-out infinite;}
+@keyframes radarPulse{0%,100%{box-shadow:0 0 0 rgba(255,68,68,0);}50%{box-shadow:0 0 22px rgba(255,68,68,0.7);}}
+.radar-alert svg{width:30px;height:30px;flex-shrink:0;}
+.radar-meta{display:flex;flex-direction:column;line-height:1.1;}
+.radar-dist{font-family:'Montserrat',sans-serif;font-weight:800;font-size:19px;color:#fff;}
+.radar-vma{font-size:12px;color:rgba(255,255,255,0.55);letter-spacing:0.08em;}

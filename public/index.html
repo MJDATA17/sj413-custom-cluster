@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920,height=720,initial-scale=1">
+<title>MJ Data · Cluster SJ413</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/cluster.css">
+<link rel="stylesheet" href="css/nav.css">
+<link rel="stylesheet" href="css/keyboard.css">
+<link rel="stylesheet" href="css/music.css">
+<link rel="stylesheet" href="css/skin.css">
+<link rel="stylesheet" href="css/settings.css">
+</head>
+<body>
+
+<!-- VIEWPORT 1920×720 EN DUR — scale CSS pour s'adapter à la fenêtre de dev -->
+<div id="viewport">
+  <div id="stage">
+
+    <!-- ═══════════ GAUCHE : COMPTEUR (design 01) ═══════════ -->
+    <div class="el" id="el-speedo" data-name="Compteur" data-base-w="680" data-base-h="680">
+      <div class="el-content">
+        <div class="speedo-bg"></div>
+        <canvas id="speedo-canvas" width="680" height="680"></canvas>
+        <div class="speedo-center">
+          <div class="speedo-num" id="speedo-num">0</div>
+          <div class="speedo-unit">KM/H</div>
+        </div>
+        <!-- ═══ MUSIQUE déplacée sur le COMPTEUR : mini-bandeau en bas + lecteur plein écran ═══ -->
+        <div class="music-mini" id="music-mini" onclick="Music.open()">
+          <div class="mini-cover"><img id="mini-cover-img" src="" alt=""></div>
+          <div class="mini-info">
+            <div class="mini-title" id="mini-title">Midnight City</div>
+            <div class="mini-artist" id="mini-artist">M83</div>
+          </div>
+          <div class="mini-eq"><span></span><span></span><span></span><span></span></div>
+          <button class="mini-next" onclick="event.stopPropagation();Music.next()" title="Titre suivant">
+            <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zm-1.5 6L6 6v12z"/></svg>
+          </button>
+        </div>
+
+        <div class="music-full" id="music-full">
+          <div class="music-ambient" id="music-ambient"></div>
+          <!-- Retour au compteur (la musique est sur le compteur ; la nav reste visible à droite) -->
+          <div class="mf-return" onclick="Music.close()" title="Retour compteur">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4.5 14a7.5 7.5 0 1 1 15 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 14 L15.5 9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span>COMPTEUR</span>
+          </div>
+          <div class="sp-banner" id="sp-banner"></div>
+          <div class="sp-views" id="sp-views">
+            <div class="sp-view active" id="sp-player">
+              <div class="mf-cover"><img id="mf-cover-img" src="" alt=""></div>
+              <div class="mf-title" id="mf-title">Midnight City</div>
+              <div class="mf-artist" id="mf-artist">M83</div>
+              <div class="mf-progress">
+                <div class="mf-bar" id="mf-bar"><div class="mf-bar-fill" id="mf-bar-fill"></div></div>
+                <div class="mf-times"><span id="mf-cur">1:42</span><span id="mf-tot">4:03</span></div>
+              </div>
+              <div class="mf-controls">
+                <button class="mf-ctl" id="btn-shuffle" onclick="Music.toggleShuffle()" title="Aléatoire"><svg viewBox="0 0 24 24" fill="none"><path d="M17 3h4v4M21 3l-7 7M3 21l7-7M17 21h4v-4M3 3l7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="mf-btn" onclick="Music.prev()"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+                <button class="mf-btn play" id="play-btn" onclick="Music.toggle()"><svg viewBox="0 0 24 24" id="play-icon"><path d="M8 5v14l11-7z"/></svg></button>
+                <button class="mf-btn" onclick="Music.next()"><svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zm-1.5 6L6 6v12z"/></svg></button>
+                <button class="mf-ctl" id="btn-repeat" onclick="Music.cycleRepeat()" title="Répéter"><svg viewBox="0 0 24 24" fill="none"><path d="M17 2l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </div>
+            <div class="sp-view" id="sp-lists">
+              <div class="sp-head"><span id="sp-lists-title">Mes playlists</span><button class="sp-back hidden" id="sp-lists-back" onclick="Music.backToPlaylists()">‹ Retour</button></div>
+              <div class="sp-scroll" id="sp-lists-body"></div>
+            </div>
+            <div class="sp-view" id="sp-search">
+              <div class="sp-searchpill" onclick="Music.openSearchKeyboard()">
+                <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#02BFA6" stroke-width="2"/><path d="M21 21 L16 16" stroke="#02BFA6" stroke-width="2" stroke-linecap="round"/></svg>
+                <span id="sp-search-q">Rechercher un titre, artiste…</span>
+              </div>
+              <div class="sp-scroll" id="sp-search-body"></div>
+            </div>
+            <div class="sp-view" id="sp-queue">
+              <div class="sp-head"><span>File d'attente</span></div>
+              <div class="sp-scroll" id="sp-queue-body"></div>
+            </div>
+          </div>
+          <div class="mf-tabs">
+            <button class="mf-tab active" data-view="sp-player" onclick="Music.show('sp-player')">Lecture</button>
+            <button class="mf-tab" data-view="sp-lists" onclick="Music.show('sp-lists')">Listes</button>
+            <button class="mf-tab" data-view="sp-search" onclick="Music.show('sp-search')">Recherche</button>
+            <button class="mf-tab" data-view="sp-queue" onclick="Music.show('sp-queue')">File</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ CENTRE : JAUGES (design 01) ═══════════ -->
+    <div class="el" id="el-fuel" data-name="Carburant" data-base-w="150" data-base-h="200">
+      <div class="el-content">
+        <div class="gauge-window" id="fuel-window">
+          <div class="gauge-bar-clip"><div class="gauge-bar-fill" id="fuel-fill"></div></div>
+          <div class="gauge-ticks"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="gauge-top-label" id="fuel-label">Carbu</div>
+          <div class="gauge-blocks" id="fuel-blocks"></div>
+          <div class="gauge-status" id="fuel-status"></div>
+          <div class="fuel-reserve-logo" id="fuel-reserve">
+            <svg viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
+              <path d="M4 21 L4 5 a2 2 0 0 1 2-2 h6 a2 2 0 0 1 2 2 v16" stroke="#8B5CF6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              <path d="M2.5 21 h13" stroke="#8B5CF6" stroke-width="1.6" stroke-linecap="round"/>
+              <rect x="6" y="6" width="6" height="4.5" rx="0.6" stroke="#8B5CF6" stroke-width="1.3" fill="none"/>
+              <path d="M14 9 h2.5 a1.5 1.5 0 0 1 1.5 1.5 v6 a1.5 1.5 0 0 0 1.5 1.5 a1.5 1.5 0 0 0 1.5 -1.5 v-7 l-2 -2.5" stroke="#8B5CF6" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </div>
+          <div class="gauge-center-val" id="fuel-pct">72<small>%</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="el" id="el-temp" data-name="Température" data-base-w="150" data-base-h="200">
+      <div class="el-content">
+        <div class="gauge-window" id="temp-window">
+          <div class="gauge-bar-clip"><div class="gauge-bar-fill" id="temp-fill"></div></div>
+          <div class="gauge-ticks"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="temp-overlay" id="temp-overlay"></div>
+          <div class="gauge-top-label">Temp</div>
+          <div class="gauge-blocks" id="temp-blocks"></div>
+          <div class="gauge-status" id="temp-status"></div>
+          <div class="gauge-center-val" id="temp-val">85<small>°</small></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ DROITE : NAV / CLAVIER / MUSIQUE (designs 02 + 03) ═══════════ -->
+    <div class="el" id="el-nav" data-name="Navigation" data-base-w="680" data-base-h="680">
+      <div class="el-content">
+        <div class="nav-circle">
+          <!-- carte Leaflet (cap-en-haut) : conteneur surdimensionné masqué par le cercle -->
+          <div class="nav-map-wrap"><div id="nav-map"></div></div>
+          <!-- fallback stylisé si Leaflet/tuiles indisponibles -->
+          <canvas id="map-canvas" width="680" height="680" style="display:none"></canvas>
+          <!-- marqueur véhicule (toujours au centre, cap vers le haut) -->
+          <div class="nav-car" id="nav-car">
+            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="22" fill="rgba(2,191,166,0.12)"/><path d="M24 8 L36 38 L24 30 L12 38 Z" fill="#fff" stroke="#02BFA6" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="veil-top"></div>
+          <div class="veil-bottom"></div>
+
+          <!-- bouton voix (alertes vocales) -->
+          <div class="nav-voice off" id="nav-voice" onclick="Nav.toggleVoice()" title="Alertes vocales">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 9v6h4l5 5V4L8 9H4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M16 8a5 5 0 0 1 0 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+
+          <!-- alerte radar (approche) -->
+          <div class="radar-alert" id="radar-alert">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#FF4444" stroke-width="2"/><path d="M12 12 L12 5 M12 12 L17 14" stroke="#FF4444" stroke-width="2" stroke-linecap="round"/></svg>
+            <div class="radar-meta"><div class="radar-dist" id="radar-dist">–</div><div class="radar-vma" id="radar-vma">–</div></div>
+          </div>
+
+          <!-- INSTRUCTION NAV (tap → ouvre le clavier) -->
+          <div class="instruction" id="instruction" onclick="Keyboard.open()">
+            <div class="instr-arrow" id="instr-arrow"></div>
+            <div class="instr-distance" id="instr-dist">800<small>m</small></div>
+            <div class="instr-street" id="instr-street">Av. de l'Arsenal</div>
+            <div class="instr-trip" id="instr-trip"></div>
+          </div>
+
+          <!-- LANES -->
+          <div class="lanes" id="lanes"></div>
+
+          <!-- DATA BAS : limite + vitesse courante (alimentée par le bus véhicule) -->
+          <div class="bottom-data">
+            <div class="speed-limit" id="speed-limit">90</div>
+            <div class="current-speed" id="current-speed">
+              <div class="cs-num" id="cs-num">0</div>
+              <div class="cs-unit">KM/H</div>
+            </div>
+          </div>
+
+          <!-- ═══ OVERLAY CLAVIER (design 03) ═══ -->
+          <div class="kb-screen" id="kb-screen">
+            <div class="kb-header" id="kb-header">Où allons-nous ?</div>
+            <div class="kb-input-wrap">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#02BFA6" stroke-width="2"/><path d="M21 21 L16 16" stroke="#02BFA6" stroke-width="2" stroke-linecap="round"/></svg>
+              <div class="kb-input empty" id="kb-input"></div>
+              <div class="kb-back" id="kb-back" onclick="Keyboard.close()">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 L6 18 M6 6 L18 18" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+            <div class="kb-suggest" id="kb-suggest"></div>
+            <div class="kb-keys" id="kb-keys"></div>
+          </div>
+
+          <div class="nav-ring"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- État connexion bus véhicule -->
+  <div id="conn-status" class="offline" title="Bus véhicule ws://localhost:3001">● SIM</div>
+
+  <!-- Panneau DEV (touche D) : pilote le simulateur (scénarios, alertes) -->
+  <div id="dev-panel" class="hidden">
+    <div class="dev-title">SIMULATEUR · scénario</div>
+    <div class="dev-row" id="dev-scenarios"></div>
+    <div class="dev-title">Déclencher</div>
+    <div class="dev-row">
+      <button onclick="Bus.send({cmd:'pulse',event:'overheat'})">Surchauffe</button>
+      <button onclick="Bus.send({cmd:'pulse',event:'low_fuel'})">Réserve</button>
+      <button onclick="Bus.send({cmd:'pulse',event:'redline'})">Redline</button>
+    </div>
+    <div class="dev-hint">D = afficher/masquer · F = plein écran · appui long = Paramètres</div>
+  </div>
+
+  <!-- Overlay CRT (visible uniquement avec un skin .crt comme TVA) -->
+  <div id="crt-overlay"><div class="crt-pix"></div><div class="crt-scan"></div><div class="crt-vig"></div><div class="crt-flick"></div></div>
+</div>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="js/skins.js"></script>
+<script src="js/bus.js"></script>
+<script src="js/cluster.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/keyboard.js"></script>
+<script src="js/music.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/calibration.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
