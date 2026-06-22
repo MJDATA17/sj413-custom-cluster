@@ -229,24 +229,25 @@ router.post('/control', async (req, res, next) => {
 router.post('/play', async (req, res, next) => {
   const { uri, context_uri, uris, offset, position_ms } = req.body || {};
   try {
-    await ensureDevice();
+    const device_id = await resolveDeviceId(); // cible « MJ Data SJ413 » (librespot) et l'active automatiquement
     let body;
     if (context_uri) body = { context_uri, offset, position_ms }; // playlist/album + titre de départ
     else if (uris) body = { uris, offset, position_ms };          // liste de titres + position de départ (→ vraie file)
     else if (uri) body = { uris: [uri] };
-    await api('/me/player/play', { method: 'PUT', body });
+    await api('/me/player/play', { method: 'PUT', query: { device_id }, body });
     res.json({ ok: true });
   } catch (e) { next(e); }
 });
 
-/* Si aucun device actif, bascule vers librespot (device nommé) ou le 1er dispo */
-async function ensureDevice() {
+/* Résout l'appareil cible : priorité au device nommé (librespot « MJ Data SJ413 »),
+   sinon l'appareil déjà actif, sinon le premier disponible. Passé en device_id à
+   /play → Spotify l'active automatiquement (plus besoin d'un appareil déjà actif). */
+async function resolveDeviceId() {
   const d = await api('/me/player/devices');
   const devices = (d && d.devices) || [];
-  if (devices.some(x => x.is_active)) return;
-  if (!devices.length) throw httpErr(404, "Aucun appareil Spotify : ouvre l'app Spotify (ou démarre librespot)");
-  const target = devices.find(x => x.name === DEVICE_NAME) || devices[0];
-  await api('/me/player', { method: 'PUT', body: { device_ids: [target.id], play: false } });
+  if (!devices.length) throw httpErr(404, "Aucun appareil Spotify : démarre librespot (ou ouvre l'app Spotify)");
+  const target = devices.find(x => x.name === DEVICE_NAME) || devices.find(x => x.is_active) || devices[0];
+  return target.id;
 }
 
 router.get('/devices', async (_req, res, next) => {
