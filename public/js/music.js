@@ -277,6 +277,19 @@ const Music = (() => {
     // progression démo + sync bandeau nav (1 Hz)
     setInterval(() => { demoTick(); syncStrip(); }, 1000);
 
+    // Au boot/réveil, Spotify (réseau + librespot) peut ne pas être prêt au 1er check :
+    // on re-vérifie le statut tant qu'on n'est pas connecté, puis on bascule en réel.
+    if (!real) {
+      const recheck = setInterval(async () => {
+        try {
+          const s = await jget('/spotify/status');
+          if (s.configured && s.authenticated) {
+            status = s; real = true; clearInterval(recheck); hideBanner(); startPoll();
+          }
+        } catch {}
+      }, 8000);
+    }
+
     // message de retour après connexion OAuth
     if (location.search.includes('spotify=connected')) banner('Spotify connecté ✓');
   }
