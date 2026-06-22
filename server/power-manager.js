@@ -35,7 +35,7 @@ const DEFAULTS = {
   enabled: true,
   source: 'auto',                 // auto | arduino | usb
   sampleIntervalMs: 1500,
-  debounce: { offConfirmMs: 9000, onConfirmMs: 2000, minConsecutiveSamples: 4 },
+  debounce: { offConfirmMs: 9000, onConfirmMs: 2000, minConsecutiveSamples: 2 },
   ignition: { busUrl: 'ws://localhost:3001', payloadField: 'ignition', staleMs: 6000 },
   charge: { onlinePath: '/sys/class/power_supply/AC/online', batteryStatusPath: '/sys/class/power_supply/BAT0/status' },
   battery: { capacityPath: '/sys/class/power_supply/BAT0/capacity', hibernateBelowPct: 15, criticalBelowPct: 7 },
