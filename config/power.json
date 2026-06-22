@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "source": "auto",
+  "sampleIntervalMs": 1500,
+  "debounce": { "offConfirmMs": 9000, "onConfirmMs": 2000, "minConsecutiveSamples": 4 },
+  "ignition": { "busUrl": "ws://localhost:3001", "payloadField": "ignition", "staleMs": 6000 },
+  "charge": { "onlinePath": "/sys/class/power_supply/AC/online", "batteryStatusPath": "/sys/class/power_supply/BAT0/status" },
+  "battery": { "capacityPath": "/sys/class/power_supply/BAT0/capacity", "hibernateBelowPct": 15, "criticalBelowPct": 7 },
+  "timers": { "sleepAfterMs": 900000 },
+  "actions": { "sleepCmd": "sudo systemctl suspend-then-hibernate", "hibernateCmd": "sudo systemctl hibernate", "dryRun": false },
+  "simulation": { "enabled": false, "charge": true, "ignition": null, "batteryPct": 80 },
+  "resumeDetectGapMs": 8000,
+  "log": { "transitions": true, "samples": false }
+}

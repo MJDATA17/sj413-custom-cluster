@@ -119,6 +119,10 @@ app.use('/api/geocode', require('./geocode'));
 app.use('/api/route', require('./route'));
 app.use('/api/radars', require('./radars'));
 
+// Power Manager (alimentation & veille — jalon 7)
+const power = require('./power-manager')();
+app.use('/api/power', power.router);
+
 /* ─── Statique ─── */
 app.use('/skins', express.static(path.join(ROOT, 'skins')));
 app.use(express.static(path.join(ROOT, 'public')));
@@ -127,6 +131,9 @@ app.listen(PORT, () => {
   console.log(`[web] app sur http://127.0.0.1:${PORT}`);
   console.log('[web] le front lira la donnée véhicule sur ws://localhost:3001 (lance `npm run sim`)');
 });
+
+// Démarrage de la machine à états alimentation/veille
+power.start();
 
 /* ─── Serveur HTTPS dédié au callback OAuth Spotify ───
    Spotify exige un redirect_uri en https. On garde l'app + le bus véhicule en

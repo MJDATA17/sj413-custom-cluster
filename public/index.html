@@ -208,6 +208,9 @@
       <button onclick="Bus.send({cmd:'pulse',event:'low_fuel'})">Réserve</button>
       <button onclick="Bus.send({cmd:'pulse',event:'redline'})">Redline</button>
     </div>
+    <div class="dev-title">POWER · état : <span id="pw-state">—</span></div>
+    <div class="dev-row" id="pw-row"></div>
+    <div class="dev-readout" id="pw-readout">—</div>
     <div class="dev-hint">D = afficher/masquer · F = plein écran · appui long = Paramètres</div>
   </div>
 
@@ -224,6 +227,7 @@
 <script src="js/music.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/calibration.js"></script>
+<script src="js/power.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
