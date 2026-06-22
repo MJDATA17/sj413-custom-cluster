@@ -250,8 +250,9 @@ router.post('/play-liked', async (_req, res, next) => {
       const j = Math.floor(Math.random() * (i + 1));
       [uris[i], uris[j]] = [uris[j], uris[i]];
     }
-    await api('/me/player/shuffle', { method: 'PUT', query: { state: true, device_id } }).catch(() => {});
     await api('/me/player/play', { method: 'PUT', query: { device_id }, body: { uris } });
+    // shuffle activé APRÈS le play (le device est alors actif, sinon Spotify refuse)
+    await api('/me/player/shuffle', { method: 'PUT', query: { state: true, device_id } }).catch(() => {});
     res.json({ ok: true, count: uris.length });
   } catch (e) { next(e); }
 });
