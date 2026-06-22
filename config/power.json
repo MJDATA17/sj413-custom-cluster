@@ -8,7 +8,7 @@
   "battery": { "capacityPath": "/sys/class/power_supply/BAT0/capacity", "hibernateBelowPct": 15, "criticalBelowPct": 7 },
   "timers": { "sleepAfterMs": 60000 },
   "actions": {
-    "sleepCmd": "sudo systemctl suspend-then-hibernate",
+    "sleepCmd": "sudo systemctl hibernate",
     "hibernateCmd": "sudo systemctl hibernate",
     "screenOffCmd": "DISPLAY=:0 XAUTHORITY=$(ls -t /tmp/serverauth.* 2>/dev/null | head -1) xset dpms force off",
     "screenOnCmd": "DISPLAY=:0 XAUTHORITY=$(ls -t /tmp/serverauth.* 2>/dev/null | head -1) xset dpms force on",
