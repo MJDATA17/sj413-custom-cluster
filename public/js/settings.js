@@ -4,13 +4,14 @@
  * Tactile (cibles ≥60px) et pilotable au pavé. Réglages persistés côté serveur.
  */
 const Settings = (() => {
-  let built = false, settings = { display: { brightness: 100, invertLR: false } };
+  let built = false, settings = { display: { brightness: 100, invertLR: false }, nav: { mapTheme: 'dark' } };
   let sensorUnsub = null;
 
   const SECTIONS = [
     ['skins', '🎨', 'Skins'],
     ['calib', '🎯', 'Calibration jauges'],
     ['display', '🔆', 'Affichage'],
+    ['nav', '🗺️', 'Navigation'],
     ['spotify', '♪', 'Spotify'],
     ['network', '📶', 'Réseau'],
     ['system', '⚙', 'Système']
@@ -34,6 +35,7 @@ const Settings = (() => {
     content.appendChild(sectionSkins());
     content.appendChild(sectionCalib());
     content.appendChild(sectionDisplay());
+    content.appendChild(sectionNav());
     content.appendChild(sectionSpotify());
     content.appendChild(sectionNetwork());
     content.appendChild(sectionSystem());
@@ -139,6 +141,25 @@ const Settings = (() => {
     return s;
   }
 
+  /* — Navigation — */
+  function sectionNav() {
+    const s = section('nav');
+    s.appendChild(el('div', 'set-h', 'Navigation'));
+    s.appendChild(el('div', 'set-sub', 'Fond de carte clair pour une meilleure lisibilité en plein jour (sinon carte sombre).'));
+    const r = el('div', 'set-row');
+    r.appendChild(el('div', null, '<label>Carte claire (jour)</label><div class="hint">Tuiles claires ; sinon fond sombre</div>'));
+    const tg = el('div', 'set-toggle'); tg.id = 'set-lightmap';
+    tg.onclick = () => {
+      const light = settings.nav.mapTheme !== 'light';
+      settings.nav.mapTheme = light ? 'light' : 'dark';
+      tg.classList.toggle('on', light);
+      if (typeof Nav !== 'undefined' && Nav.setMapTheme) Nav.setMapTheme(settings.nav.mapTheme);
+      persist();
+    };
+    r.appendChild(tg); s.appendChild(r);
+    return s;
+  }
+
   /* — Spotify — */
   function sectionSpotify() {
     const s = section('spotify');
@@ -196,15 +217,17 @@ const Settings = (() => {
   }
 
   async function persist() {
-    try { await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ display: settings.display }) }); } catch {}
+    try { await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ display: settings.display, nav: settings.nav }) }); } catch {}
   }
 
   async function open() {
     if (!built) build();
-    try { settings = { display: { brightness: 100, invertLR: false }, ...(await (await fetch('/api/settings')).json()) }; } catch {}
+    try { settings = { display: { brightness: 100, invertLR: false }, nav: { mapTheme: 'dark' }, ...(await (await fetch('/api/settings')).json()) }; } catch {}
+    if (!settings.nav) settings.nav = { mapTheme: 'dark' };
     document.getElementById('set-bright').value = settings.display.brightness;
     document.getElementById('set-bright-val').textContent = settings.display.brightness + '%';
     document.getElementById('set-invert').classList.toggle('on', !!settings.display.invertLR);
+    document.getElementById('set-lightmap').classList.toggle('on', settings.nav.mapTheme === 'light');
     document.getElementById('settings-overlay').classList.add('open');
     show('skins');
   }

@@ -50,7 +50,7 @@ app.post('/api/layout', (req, res) => {
 
 /* ─── Réglages (skin actif + préférences affichage) — persistant ─── */
 const SETTINGS_PATH = path.join(ROOT, 'config', 'settings.json');
-const DEFAULT_SETTINGS = { activeSkin: 'mjdata', display: { brightness: 100, invertLR: false } };
+const DEFAULT_SETTINGS = { activeSkin: 'mjdata', display: { brightness: 100, invertLR: false }, nav: { mapTheme: 'dark' } };
 function readSettings() {
   try { return { ...DEFAULT_SETTINGS, ...JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8')) }; }
   catch { return { ...DEFAULT_SETTINGS }; }

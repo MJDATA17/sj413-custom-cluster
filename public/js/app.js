@@ -93,11 +93,13 @@
   async function boot() {
     applyFit();
     await Skins.load();                       // applique le skin actif (vars + render_style)
-    try { applyDisplay((await (await fetch('/api/settings')).json()).display); } catch {}
+    let bootSettings = {};
+    try { bootSettings = await (await fetch('/api/settings')).json(); applyDisplay(bootSettings.display); } catch {}
     await loadLayout();
 
     Cluster.render();
     Nav.init();
+    if (Nav.setMapTheme) Nav.setMapTheme((bootSettings.nav || {}).mapTheme || 'dark');
     Keyboard.init();
     Music.init();
     buildDevPanel();

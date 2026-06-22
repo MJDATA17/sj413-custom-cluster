@@ -25,6 +25,17 @@ const Nav = (() => {
   /* ── Leaflet ── */
   let map = null, routeLayer = null, useLeaflet = false;
   let mapEl = null;
+  let tileLayer = null, mapTheme = 'dark';
+  const TILES = {
+    dark:  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+  };
+  // Bascule carte sombre/claire (paramètre « Carte claire » du menu)
+  function setMapTheme(theme) {
+    mapTheme = (theme === 'light') ? 'light' : 'dark';
+    document.body.classList.toggle('nav-light', mapTheme === 'light');
+    if (tileLayer) tileLayer.setUrl(TILES[mapTheme]);
+  }
 
   function initMap() {
     if (typeof L === 'undefined') return false;
@@ -35,7 +46,7 @@ const Nav = (() => {
         doubleClickZoom: false, scrollWheelZoom: false, boxZoom: false, keyboard: false,
         zoomSnap: 0, inertia: false
       }).setView(pos, 16);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      tileLayer = L.tileLayer(TILES[mapTheme], {
         maxZoom: 19, subdomains: 'abcd', attribution: '© OSM © CARTO', crossOrigin: true
       }).addTo(map);
       map.attributionControl.setPrefix('');
@@ -342,5 +353,5 @@ const Nav = (() => {
     requestAnimationFrame(loop);
   }
 
-  return { init, updateSpeed, updatePosition, getPosition, navigateTo, stopNav, toggleVoice, applySkin, state };
+  return { init, updateSpeed, updatePosition, getPosition, navigateTo, stopNav, toggleVoice, applySkin, setMapTheme, state };
 })();
