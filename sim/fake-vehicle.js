@@ -35,6 +35,7 @@ const serial = require('../server/serial-bridge');
 const DATA_SOURCE = process.env.DATA_SOURCE || 'sim';
 const SERIAL_DEVICE = process.env.SERIAL_DEVICE || '/dev/ttyUSB0';
 const SERIAL_BAUD = parseInt(process.env.SERIAL_BAUD || '115200', 10);
+let serialLive = null;   // état pour logguer la bascule Arduino ↔ fallback (changements seulement)
 
 const PORT = process.env.WS_DATA_PORT || 3001;
 const cal = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'sensors.json'), 'utf8'));
@@ -161,6 +162,13 @@ function payload() {
   // sinon (Arduino absent/stale) on garde les valeurs simulées → fallback propre.
   if (DATA_SOURCE === 'serial') {
     const a = serial.latest(2000);
+    const live = !!a;
+    if (live !== serialLive) {
+      serialLive = live;
+      console.log(live
+        ? '[sim] ✓ données Arduino ACTIVES → moteur réel'
+        : '[sim] ⚠ ARDUINO INACCESSIBLE/MUET → FALLBACK SIMULATEUR (aucune trame fraîche < 2s)');
+    }
     if (a) {
       if (a.rpm != null) out.rpm = a.rpm;
       if (a.fuel != null) { out.fuel = a.fuel; out.fuel_ohm = a.fuel_ohm; }
