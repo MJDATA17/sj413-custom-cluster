@@ -21,6 +21,11 @@ const { WebSocketServer } = require('ws');
 const fs = require('fs');
 const path = require('path');
 
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+const gps = require('./gps');
+const GPS_ENABLED = process.env.GPS_ENABLED !== '0';
+const GPS_DEVICE = process.env.GPS_DEVICE || '/dev/ttyACM0';
+
 const PORT = process.env.WS_DATA_PORT || 3001;
 const cal = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'sensors.json'), 'utf8'));
 
@@ -133,6 +138,16 @@ function payload() {
     scenario,
     ts: Date.now()
   };
+  // GPS réel (u-blox) : remplace position + vitesse simulées dès qu'un fix est dispo
+  if (GPS_ENABLED) {
+    const g = gps.latest(10000);
+    if (g && g.lat != null && g.lon != null) {
+      out.gps_lat = +g.lat.toFixed(6);
+      out.gps_lon = +g.lon.toFixed(6);
+      out.gps_fix = !!g.fix;
+      if (g.fix && g.speedKmh != null) out.speed = +g.speedKmh.toFixed(1);
+    }
+  }
   // overrides manuels (éditeur / tests) écrasent la valeur diffusée
   for (const k of Object.keys(overrides)) out[k] = overrides[k];
   if (!out.gps_fix) { out.speed = out.speed; } // garde la dernière vitesse connue côté front
@@ -174,3 +189,7 @@ if (arg) applyScenarioInit(arg);
 
 console.log(`[sim] fake-vehicle WS sur ws://localhost:${PORT}  ·  scénario: ${scenario}`);
 console.log('[sim] scénarios:', Object.keys(SCENARIOS).join(', '));
+
+// GPS réel : démarre la lecture NMEA (position/vitesse réelles si fix dispo, sinon simulé)
+if (GPS_ENABLED) { console.log('[sim] GPS réel activé →', GPS_DEVICE); gps.start(GPS_DEVICE); }
+else console.log('[sim] GPS réel désactivé (GPS_ENABLED=0) → position simulée');
