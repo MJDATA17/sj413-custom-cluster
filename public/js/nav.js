@@ -20,7 +20,7 @@ const Nav = (() => {
   const BASE_ZOOM = 16;             // zoom Leaflet FIXE (les tuiles ne se rechargent pas)
   let curScale = 1, targetScale = 1; // zoom d'approche fait en CSS (scale), pas en Leaflet
   let approaching = false;          // proche d'une manœuvre → voies + zoom
-  let lastStepKey = null, lastGps = null;
+  let lastStepKey = null, lastGps = null, lastHeadingPos = null;
 
   /* ── Leaflet ── */
   let map = null, routeLayer = null, useLeaflet = false;
@@ -293,7 +293,14 @@ const Nav = (() => {
       }
       if (traveled >= route.total) { say('Vous êtes arrivé'); stopNav(); }
     } else {
-      targetScale = 1; // au repos : vue large, cap figé (pas de gigotement)
+      targetScale = 1; // hors navigation : vue large
+      // Suivi du GPS RÉEL hors navigation : la carte se centre sur la position réelle ;
+      // cap-en-haut calculé depuis le déplacement (au repos, cap figé, pas de gigotement).
+      if (lastGps) {
+        pos = lastGps;
+        if (lastHeadingPos && hm(lastHeadingPos, lastGps) > 8) { targetHeading = bearing(lastHeadingPos, lastGps); lastHeadingPos = lastGps; }
+        else if (!lastHeadingPos) lastHeadingPos = lastGps;
+      }
     }
 
     // lissage du cap (angle le plus court) et du zoom CSS

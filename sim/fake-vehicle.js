@@ -25,6 +25,8 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const gps = require('./gps');
 const GPS_ENABLED = process.env.GPS_ENABLED !== '0';
 const GPS_DEVICE = process.env.GPS_DEVICE || '/dev/ttyACM0';
+// Décalage de vitesse appliqué à la vitesse GPS affichée (km/h, négatif = marge de sécu)
+const GPS_SPEED_OFFSET = parseFloat(process.env.GPS_SPEED_OFFSET || '-5');
 
 const PORT = process.env.WS_DATA_PORT || 3001;
 const cal = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'sensors.json'), 'utf8'));
@@ -145,7 +147,7 @@ function payload() {
       out.gps_lat = +g.lat.toFixed(6);
       out.gps_lon = +g.lon.toFixed(6);
       out.gps_fix = !!g.fix;
-      if (g.fix && g.speedKmh != null) out.speed = +g.speedKmh.toFixed(1);
+      if (g.fix && g.speedKmh != null) out.speed = Math.max(0, +(g.speedKmh + GPS_SPEED_OFFSET).toFixed(1));
     }
   }
   // overrides manuels (éditeur / tests) écrasent la valeur diffusée
