@@ -29,6 +29,13 @@ const GPS_DEVICE = process.env.GPS_DEVICE || '/dev/ttyACM0';
 // Positif = on AFFICHE plus que le réel → en se calant dessus on roule toujours en dessous.
 const GPS_SPEED_OFFSET = parseFloat(process.env.GPS_SPEED_OFFSET || '4');
 
+// Source des données moteur : 'sim' (simulateur) ou 'serial' (Arduino réel, fallback sim si absent)
+const scal = require('../server/sensors-cal');
+const serial = require('../server/serial-bridge');
+const DATA_SOURCE = process.env.DATA_SOURCE || 'sim';
+const SERIAL_DEVICE = process.env.SERIAL_DEVICE || '/dev/ttyUSB0';
+const SERIAL_BAUD = parseInt(process.env.SERIAL_BAUD || '115200', 10);
+
 const PORT = process.env.WS_DATA_PORT || 3001;
 const cal = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'sensors.json'), 'utf8'));
 
@@ -113,18 +120,17 @@ function tick() {
   broadcast();
 }
 
-/* ─── Conversion état → bruts capteurs (cohérents avec la calibration) ─── */
+/* ─── Conversion état → bruts capteurs (via les courbes de calibration) ─── */
 function fuelToOhm(pct) {
-  const { ohm_full, ohm_empty, adc_noise_ohm } = cal.fuel;
-  return +(ohm_full + (ohm_empty - ohm_full) * (1 - pct / 100) + rnd(-adc_noise_ohm, adc_noise_ohm)).toFixed(1);
+  const o = scal.fuelOhmFromPct(pct);
+  const noise = (cal.fuel && cal.fuel.adc_noise_ohm) || 0;
+  return o == null ? null : +(o + rnd(-noise, noise)).toFixed(1);
 }
 function tempToRaw(c) {
-  // tension ADC approximée via diviseur NTC (valeur 0..32767 façon ADS1115)
-  const { ntc_beta, ntc_r25, series_resistor } = cal.temp;
-  const tK = c + 273.15;
-  const r = ntc_r25 * Math.exp(ntc_beta * (1 / tK - 1 / 298.15));
-  const vRatio = r / (r + series_resistor);
-  return Math.round(vRatio * 32767);
+  // ohms (courbe NTC) → ADC brut via le pont diviseur (mode A natif, 0..1023)
+  const o = scal.tempOhmFromC(c);
+  const series = (cal.temp && cal.temp.series_resistor) || 1000;
+  return o == null ? 0 : scal.ohmToRaw(o, series, 1023);
 }
 
 function payload() {
@@ -149,6 +155,17 @@ function payload() {
       out.gps_lon = +g.lon.toFixed(6);
       out.gps_fix = !!g.fix;
       if (g.fix && g.speedKmh != null) out.speed = g.speedKmh < 2 ? 0 : Math.max(0, +(g.speedKmh + GPS_SPEED_OFFSET).toFixed(1));
+    }
+  }
+  // Arduino réel (rpm/carburant/température/contact) si DATA_SOURCE=serial et données fraîches ;
+  // sinon (Arduino absent/stale) on garde les valeurs simulées → fallback propre.
+  if (DATA_SOURCE === 'serial') {
+    const a = serial.latest(2000);
+    if (a) {
+      if (a.rpm != null) out.rpm = a.rpm;
+      if (a.fuel != null) { out.fuel = a.fuel; out.fuel_ohm = a.fuel_ohm; }
+      if (a.temp != null) { out.temp = a.temp; out.temp_raw = a.temp_raw; }
+      out.ignition = a.ignition;     // contact réel → consommé par le Power Manager
     }
   }
   // overrides manuels (éditeur / tests) écrasent la valeur diffusée
@@ -196,3 +213,7 @@ console.log('[sim] scénarios:', Object.keys(SCENARIOS).join(', '));
 // GPS réel : démarre la lecture NMEA (position/vitesse réelles si fix dispo, sinon simulé)
 if (GPS_ENABLED) { console.log('[sim] GPS réel activé →', GPS_DEVICE); gps.start(GPS_DEVICE); }
 else console.log('[sim] GPS réel désactivé (GPS_ENABLED=0) → position simulée');
+
+// Source moteur : Arduino réel (série) ou simulateur
+if (DATA_SOURCE === 'serial') { console.log('[sim] moteur = Arduino série →', SERIAL_DEVICE, '@', SERIAL_BAUD); serial.start(SERIAL_DEVICE, SERIAL_BAUD); }
+else console.log('[sim] moteur = simulateur (DATA_SOURCE=sim)');
