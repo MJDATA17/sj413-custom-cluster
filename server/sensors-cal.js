@@ -43,5 +43,16 @@ module.exports = {
   tempOhmFromC(c) { return interp(cal.temp && cal.temp.curve, 'celsius', 'ohm', c); },
   // ── pont diviseur (sonde↔GND, R_série↔Vsupply, point milieu lu) ──
   ohmToRaw(ohm, series, adcMax) { return Math.round(adcMax * ohm / (ohm + series)); },
-  rawToOhm(raw, series, adcMax) { return raw >= adcMax ? Infinity : series * raw / (adcMax - raw); }
+  rawToOhm(raw, series, adcMax) { return raw >= adcMax ? Infinity : series * raw / (adcMax - raw); },
+  // ── orientation réelle du pont ──
+  // Le firmware calcule TOUJOURS l'ohm en supposant la sonde côté MASSE (low-side) :
+  //   ohm_fw = série · raw/(adcMax−raw).
+  // Si la sonde est en fait câblée côté +5V (high-side), l'ohm réel vaut
+  //   ohm_réel = série · (adcMax−raw)/raw = série² / ohm_fw   (indépendant de adcMax).
+  // sensors.json: "wiring":"high_side" (sonde↔+5V) ou "low_side"/absent (sonde↔GND).
+  realOhm(ohmFw, series, wiring) {
+    if (ohmFw == null || !isFinite(ohmFw)) return ohmFw;
+    if (wiring === 'high_side') return ohmFw > 0 ? (series * series) / ohmFw : Infinity;
+    return ohmFw; // low_side : le firmware est déjà dans le bon sens
+  }
 };

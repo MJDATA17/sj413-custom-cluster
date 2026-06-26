@@ -40,9 +40,20 @@
       if (content) content.style.transform = `scale(${sc})`;
     }
   }
+  // Au boot, le WiFi peut s'associer/changer d'IP PENDANT le chargement → les fetch
+  // sont avortés (net::ERR_NETWORK_CHANGED) et le layout ne s'applique jamais (tout
+  // se retrouve tassé en haut-gauche). On réessaie quelques fois jusqu'à stabilisation.
+  async function fetchJSON(url, tries = 8, delay = 700) {
+    for (let i = 0; i < tries; i++) {
+      try { const r = await fetch(url, { cache: 'no-store' }); if (r.ok) return await r.json(); } catch (e) {}
+      await new Promise(res => setTimeout(res, delay));
+    }
+    console.warn('indisponible après retries:', url);
+    return null;
+  }
   async function loadLayout() {
-    try { applyLayout(await (await fetch('/api/layout')).json()); }
-    catch (e) { console.warn('layout indisponible', e); }
+    const layout = await fetchJSON('/api/layout');
+    if (layout) applyLayout(layout);
   }
 
   /* ─── Affichage (luminosité + inversion) ─── */
@@ -93,8 +104,8 @@
   async function boot() {
     applyFit();
     await Skins.load();                       // applique le skin actif (vars + render_style)
-    let bootSettings = {};
-    try { bootSettings = await (await fetch('/api/settings')).json(); applyDisplay(bootSettings.display); } catch {}
+    let bootSettings = (await fetchJSON('/api/settings')) || {};
+    applyDisplay(bootSettings.display);
     await loadLayout();
 
     Cluster.render();

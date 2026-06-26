@@ -24,15 +24,23 @@ let stream = null, buf = '', retryT = null, haveData = false;
 function parseLine(line) {
   if (!line || line[0] !== '{') return;
   let m; try { m = JSON.parse(line); } catch { return; }
-  const fuelPct = (m.fuel_ohm != null) ? cal.fuelPctFromOhm(m.fuel_ohm) : null;
-  const tempC = (m.temp_ohm != null) ? cal.tempCFromOhm(m.temp_ohm) : null;
+  // Corrige l'orientation du pont (firmware = low-side) selon sensors.json "wiring"
+  // avant d'appliquer les courbes. fuel/temp câblés high-side → ohm réel = série²/ohm_fw.
+  const c = cal.cal();
+  const fSeries = (c.fuel && c.fuel.series_resistor) || 100;
+  const tSeries = (c.temp && c.temp.series_resistor) || 1000;
+  const fWiring = c.fuel && c.fuel.wiring, tWiring = c.temp && c.temp.wiring;
+  const fuelOhm = (m.fuel_ohm != null) ? cal.realOhm(+m.fuel_ohm, fSeries, fWiring) : null;
+  const tempOhm = (m.temp_ohm != null) ? cal.realOhm(+m.temp_ohm, tSeries, tWiring) : null;
+  const fuelPct = (fuelOhm != null) ? cal.fuelPctFromOhm(fuelOhm) : null;
+  const tempC = (tempOhm != null) ? cal.tempCFromOhm(tempOhm) : null;
   latest = {
     rpm: m.rpm != null ? Math.round(m.rpm) : null,
     fuel: fuelPct != null ? +fuelPct.toFixed(1) : null,
-    fuel_ohm: m.fuel_ohm != null ? +(+m.fuel_ohm).toFixed(1) : null,
+    fuel_ohm: (fuelOhm != null && isFinite(fuelOhm)) ? +fuelOhm.toFixed(1) : null,
     fuel_raw: m.fuel_raw,
     temp: tempC != null ? +tempC.toFixed(1) : null,
-    temp_ohm: m.temp_ohm != null ? +(+m.temp_ohm).toFixed(1) : null,
+    temp_ohm: (tempOhm != null && isFinite(tempOhm)) ? +tempOhm.toFixed(1) : null,
     temp_raw: m.temp_raw,
     ignition: !!m.ign,
     st: m.st,

@@ -1,10 +1,11 @@
 {
   "_doc": "Calibration capteurs SJ413. Courbes (tables d'interpolation) issues de CALIBRATION (véhicule). L'Arduino envoie des ohms bruts ; le L14 applique ces courbes ohms→%/°C. À affiner au multimètre/casserole.",
   "fuel": {
-    "_doc": "Sonde résistive décroissante (plein = moins d'ohms). R_série pont = 100Ω. Courbe NON linéaire.",
+    "_doc": "Sonde résistive décroissante (plein = moins d'ohms). R_série pont = 100Ω. Courbe NON linéaire. Câblage RÉEL high-side (sonde↔+5V) : ohm réel = série²/ohm_firmware (le firmware calcule low-side).",
     "type": "resistive_decreasing",
     "adc_channel": 0,
     "series_resistor": 100,
+    "wiring": "high_side",
     "vref": 5.0,
     "reserve_pct": 15,
     "adc_noise_ohm": 1.5,
@@ -15,22 +16,25 @@
     ]
   },
   "temp": {
-    "_doc": "Sonde NTC FEBI 28265 (1 fil + masse moteur). R_série pont = 1000Ω. Courbe à confirmer à la casserole.",
+    "_doc": "Sonde NTC FEBI 28265 (1 fil + masse moteur). R_série pont = 1000Ω. Câblage RÉEL high-side (sonde↔+5V) : ohm réel = série²/ohm_firmware. COURBE PROVISOIRE (2026-06-26) : ancrée sur 1 point mesuré 345Ω=43°C (sonde sur thermostat, canicule), forme FEBI conservée (×0,309). À REMPLACER par calibration casserole 20/40/60/80/100°C (thermomètre + multimètre).",
     "type": "ntc",
     "adc_channel": 1,
     "series_resistor": 1000,
+    "wiring": "high_side",
     "vref": 5.0,
     "ground": "engine_block",
     "warn_amber_c": 100,
     "warn_red_c": 110,
     "adc_noise_c": 1.0,
+    "calibration_todo": "casserole: relever ohm réel à 20/40/60/80/100°C et remplacer cette courbe provisoire",
     "curve": [
-      { "ohm": 2200, "celsius": 20 },
-      { "ohm": 1200, "celsius": 40 },
-      { "ohm": 650, "celsius": 60 },
-      { "ohm": 360, "celsius": 80 },
-      { "ohm": 220, "celsius": 100 },
-      { "ohm": 165, "celsius": 110 }
+      { "ohm": 680, "celsius": 20 },
+      { "ohm": 371, "celsius": 40 },
+      { "ohm": 345, "celsius": 43 },
+      { "ohm": 200, "celsius": 60 },
+      { "ohm": 110, "celsius": 80 },
+      { "ohm": 68, "celsius": 100 },
+      { "ohm": 50, "celsius": 110 }
     ]
   },
   "rpm": {
